@@ -32,7 +32,6 @@ namespace QuantConnect.Algorithm.CSharp
             public void OnData(TradeBars data)
             {
                 var holdingEURUSD = Portfolio["EURUSD"];
-
                 bool investedEURUSD = false;
 
                 if ((holdingEURUSD.Quantity == 0 || holdingEURUSD.Quantity < 0) && !investedEURUSD)
@@ -46,6 +45,24 @@ namespace QuantConnect.Algorithm.CSharp
                 {
                     Order("EURUSD", -(holdingEURUSD.Quantity + 100));
                     investedEURUSD = true;
+                    Debug("--Purchased Short");
+                }
+
+
+                var holdingNZDUSD = Portfolio["NZDUSD"];
+                bool investedNZDUSD = false;
+
+                if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity < 0) && !investedNZDUSD)
+                {
+                    Order("NZDUSD", Math.Abs(holdingNZDUSD.Quantity) + 100);
+                    investedNZDUSD = true;
+                    Debug("--Purchased Stock");
+                }
+
+                if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity > 0) && !investedNZDUSD)
+                {
+                    Order("NZDUSD", -(holdingNZDUSD.Quantity + 100));
+                    investedNZDUSD = true;
                     Debug("--Purchased Short");
                 }
 

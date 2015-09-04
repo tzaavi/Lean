@@ -14,9 +14,6 @@
         <div class="container">
             <div id="plots"></div>
             
-            <div>
-                
-            </div>
             
             <div>
                 <ul class="nav nav-tabs" role="tablist">
@@ -64,6 +61,7 @@
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
         <script src="https://d14fo0winaifog.cloudfront.net/plotly-basic.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
 
         <script>
             /*
@@ -79,22 +77,12 @@
                     Flag = 4
             */
 
-            $(function() {
-                $('#add-panel').click(function() {
-                    
-
-
-                    return false;
-                });
-            });
-
-            function appendCahrtElement(chartEl, title) {
-                var panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a href="#"></a></h4></div><div class="panel-collapse collapse in"><div class="panel-body"></div></div></div>');
+            function createCollapeContainer(title, show) {
+              
+                var panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a href="#"></a></h4></div><div class="panel-collapse collapse ' + show + '"><div class="panel-body"></div></div></div>');
                 var header = panel.find('.panel-title a');
-                var body = panel.find('.panel-body');
                 var collapse = panel.find('.collapse');
                 header.text(title);
-                body.append(chartEl);
 
                 header.click(function () {
                     collapse.collapse('toggle');
@@ -102,6 +90,7 @@
                 });
 
                 $('#plots').append(panel);
+                return panel;
             }
 
             function toPlotyData(chart) {
@@ -111,7 +100,13 @@
                         name: s.Name
                     };
                     track.x = $.map(s.Values, function (item) {
-                        return new Date(item.x * 1000);
+                        if (isNaN(item.x)) {
+                            var d = moment(item.x);
+                            console.log(d.isValid());
+                            return d.toDate();
+                        } else {
+                            return new Date(item.x * 1000);
+                        }
                     });
                     track.y = $.map(s.Values, function (item) {
                         return item.y;
@@ -128,23 +123,39 @@
                     yaxis: { title: data[1].title, domain: [0, 0.25] },
                     yaxis2: { title: data[0].title, domain: [0.3, 1] }
                 };
-                var plot = $('<div></div>');
-                appendCahrtElement(plot, 'Strategy Equity');
-                Plotly.newPlot(plot.get(0), data, layout);
+                
+                var panel = createCollapeContainer('Strategy Equity');
+                var chartEl = $('<div></div>');
+                var isRenderd = false;
+                panel.find('.panel-body').append(chartEl);
+                $(panel).on('shown.bs.collapse', function () {
+                    if (!isRenderd) {
+                        Plotly.newPlot(chartEl.get(0), data, layout);
+                        isRenderd = true;
+                    }
+                });
+                
             }
 
 
-
             function displyChart(chart) {
+                var data = toPlotyData(chart);
 
-                data = toPlotyData(chart);
+                var panel = createCollapeContainer(chart.Name);
+                var chartEl = $('<div></div>');
+                panel.find('.panel-body').append(chartEl);
+                var isRenderd = false;
+                $(panel).on('shown.bs.collapse', function () {
+                    if (!isRenderd) {
+                        Plotly.newPlot(chartEl.get(0), data);
+                        isRenderd = true;
+                    }
+                });
 
-                var plot = $('<div></div>');
-                appendCahrtElement(plot, chart.Name);
 
                 
                 //if (chart.ChartType == 0) {
-                Plotly.newPlot(plot.get(0), data);
+                //Plotly.newPlot(plot.get(0), data);
                 //}
 
 
@@ -159,6 +170,8 @@
 
                 }*/
             }
+
+
 
             function getSeriesType(id) {
                 switch (id) {
@@ -176,7 +189,7 @@
                 }
             }
 
-            function displayStatistics() {
+            function buildStatistics() {
                 var stats = _data['Statistics'];
                 var i = 0;
                 var table = $('#statistics');
@@ -191,7 +204,7 @@
                 });
             }
 
-            function displayTrades() {
+            function buildTradesList() {
                 var orders = _data['Orders'];
                 var tbody = $('#trades-table tbody');
                 $.each(orders, function (k, v) {
@@ -206,6 +219,69 @@
                     tr.append('<td>' + v.Tag + '</td>');
                     tbody.append(tr);
                 });
+            }
+
+            function buildTradesChart() {
+                var orders = _data['Orders'];
+                var panel = createCollapeContainer('Trades');
+
+                var charts = {};
+
+                $.each(orders, function(k, v) {
+                    var chart = charts[v.Symbol.Value];
+                    if (!chart) {
+                        chart = { Series: {} };
+                        charts[v.Symbol.Value] = chart;
+                    }
+                    var direction = getOrderDirection(v.Direction);
+                    var track = chart.Series[direction];
+                    if (!track) {
+                        track = {Values:[]};
+                        chart.Series[direction] = track;
+                    }
+
+                    var time = v.Time;
+                    if (time.indexOf('Z') == -1)
+                        time += 'Z';
+                    track.Values.push({
+                        x: time,
+                        y: v.Price
+                    });
+                });
+
+
+                var navTabs = $('<ul class="nav nav-tabs" role="tablist"></ul>');
+                $.each(charts, function (k, v) {
+                    var tab = $('<li><a href="#overview" data-toggle="tab">' + k + '</a></li>');
+                    tab.data('key', k);
+                    navTabs.append(tab);
+                });
+
+
+                var chartEl = $('<div></div>');
+                panel.find('.panel-body').append(navTabs).append(chartEl);
+
+                var firstTab = navTabs.find('li:first-child');
+                firstTab.addClass('active');
+
+                
+                var display = function(key) {
+                    Plotly.Plots.purge(chartEl.get(0));
+                    var data = toPlotyData(charts[key]);
+                    console.log(data);
+                    Plotly.plot(chartEl.get(0), data);
+                };
+
+
+                $(panel).on('shown.bs.collapse', function () {
+                    display(firstTab.data('key'));
+                });
+
+                navTabs.find('a').click(function() {
+                    display($(this).text());
+                });
+
+
             }
 
             function getOrderType(id) {
@@ -269,8 +345,10 @@
                 } 
             });
 
-            displayStatistics();
-            displayTrades();
+            buildStatistics();
+            buildTradesList();
+            buildTradesChart();
+
         </script>
     </body>
 
