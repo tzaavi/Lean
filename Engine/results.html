@@ -177,6 +177,7 @@
 
 
                 option = {
+
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: {
@@ -184,8 +185,8 @@
                         },
                         transitionDuration: 0,
                         showDelay: 0,
-                        formatter: 'vvv'
-            },
+                        //formatter: 'vvv'
+                    },
                     legend: {
                         data: ['xx', '最低气温']
                     },
@@ -226,15 +227,31 @@
                 console.log('xAxis', option);
 
 
-                var chart = echarts.init($('#stack-chart').get(0));
-                chart.setOption(option);
-                chart.setTheme({
+                chart_ = echarts.init($('#stack-chart').get(0));
+                chart_.setOption(option);
+                chart_.setTheme({
                     line: {
                         smooth: false,
                         symbol: 'emptyCircle'
                     }
                 });
-                $(window).resize(chart.resize);
+                $(window).resize(chart_.resize);
+
+                var originalFuc = chart_.component.tooltip._styleAxisPointer;
+                chart_.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
+                    var self = chart_.component.tooltip;
+                    originalFuc.apply(self, arguments);
+
+
+                    self._axisCrossShape.style.text = ('( '
+                            + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format()
+                            + ' , '
+                            + this.component.yAxis.getAxis(0).getValueFromCoord(y)
+                            + ' , '
+                            + this.component.yAxis.getAxis(0).getValueFromCoord(y)
+                            + ' )'
+                    ).replace('  , ', ' ').replace(' ,  ', ' ');
+                };
 
 
 //if (chart.ChartType == 0) {
