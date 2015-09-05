@@ -29,42 +29,51 @@ namespace QuantConnect.Algorithm.CSharp
             /// OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
             /// </summary>
             /// <param name="data">TradeBars IDictionary object with your stock data</param>
+
+            private int count = 0;
             public void OnData(TradeBars data)
             {
-                var holdingEURUSD = Portfolio["EURUSD"];
-                bool investedEURUSD = false;
-
-                if ((holdingEURUSD.Quantity == 0 || holdingEURUSD.Quantity < 0) && !investedEURUSD)
+                count++;
+                if (count%10 == 0)
                 {
-                    Order("EURUSD", Math.Abs(holdingEURUSD.Quantity) + 100);
-                    investedEURUSD = true;
-                    Debug("--Purchased Stock");
+                    var holdingEURUSD = Portfolio["EURUSD"];
+                    bool investedEURUSD = false;
+
+                    if ((holdingEURUSD.Quantity == 0 || holdingEURUSD.Quantity < 0) && !investedEURUSD)
+                    {
+                        Order("EURUSD", Math.Abs(holdingEURUSD.Quantity) + 100);
+                        investedEURUSD = true;
+                        Debug("--Purchased Stock");
+                    }
+
+                    if ((holdingEURUSD.Quantity == 0 || holdingEURUSD.Quantity > 0) && !investedEURUSD)
+                    {
+                        Order("EURUSD", -(holdingEURUSD.Quantity + 100));
+                        investedEURUSD = true;
+                        Debug("--Purchased Short");
+                    }
+
+
+                    var holdingNZDUSD = Portfolio["NZDUSD"];
+                    bool investedNZDUSD = false;
+
+                    if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity < 0) && !investedNZDUSD)
+                    {
+                        Order("NZDUSD", Math.Abs(holdingNZDUSD.Quantity) + 100);
+                        investedNZDUSD = true;
+                        Debug("--Purchased Stock");
+                    }
+
+                    if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity > 0) && !investedNZDUSD)
+                    {
+                        Order("NZDUSD", -(holdingNZDUSD.Quantity + 100));
+                        investedNZDUSD = true;
+                        Debug("--Purchased Short");
+                    }
                 }
+                
 
-                if ((holdingEURUSD.Quantity == 0 || holdingEURUSD.Quantity > 0) && !investedEURUSD)
-                {
-                    Order("EURUSD", -(holdingEURUSD.Quantity + 100));
-                    investedEURUSD = true;
-                    Debug("--Purchased Short");
-                }
-
-
-                var holdingNZDUSD = Portfolio["NZDUSD"];
-                bool investedNZDUSD = false;
-
-                if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity < 0) && !investedNZDUSD)
-                {
-                    Order("NZDUSD", Math.Abs(holdingNZDUSD.Quantity) + 100);
-                    investedNZDUSD = true;
-                    Debug("--Purchased Stock");
-                }
-
-                if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity > 0) && !investedNZDUSD)
-                {
-                    Order("NZDUSD", -(holdingNZDUSD.Quantity + 100));
-                    investedNZDUSD = true;
-                    Debug("--Purchased Short");
-                }
+               
 
 
                 /*if (Portfolio.Invested)
