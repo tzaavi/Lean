@@ -9,11 +9,6 @@
 </head>
     <body>
         
-        
-        <div>
-            <div id="stack-chart" style="width:100%; height:400px"></div>
-        </div>
-    
         <div class="container">
             <div id="plots"></div>
             
@@ -120,53 +115,65 @@
             }
 
             function displayStrategyEquity(chart) {
-                data = toPlotyData(chart);
-                if (data.length == 2)
-                    data[0]['yaxis'] = 'y2';
-                var layout = {
-                    yaxis: { title: data[1].title, domain: [0, 0.25] },
-                    yaxis2: { title: data[0].title, domain: [0.3, 1] }
-                };
-                
                 var panel = createCollapeContainer('Strategy Equity');
-                var chartEl = $('<div></div>');
+                var option1 = getEchartBaseOptions(chart);
+                var option2 = getEchartBaseOptions(chart);
+                option1.series[1].data = [];
+                option2.series[0].data = [];
+
+                option2.legend.y = -30;
+                option2.toolbox.y = -30;
+                option2.grid = {
+                    y: 5,
+                };
+
+
+                option1.dataZoom = null;
+
+                console.log(option1)
+            
+
+                var chartEl1 = $('<div style="width:100%; height: 400px;"></div>');
+                var chartEl2 = $('<div style="width:100%; height: 150px;"></div>');
                 var isRenderd = false;
-                panel.find('.panel-body').append(chartEl);
+                panel.find('.panel-body').append(chartEl1);
+                panel.find('.panel-body').append(chartEl2);
                 $(panel).on('shown.bs.collapse', function () {
                     if (!isRenderd) {
-                        Plotly.newPlot(chartEl.get(0), data, layout);
+                        //Plotly.newPlot(chartEl.get(0), data, layout);
                         isRenderd = true;
+
+                        var echart1 = echarts.init(chartEl1.get(0));
+                        echart1.setOption(option1);
+                        $(window).resize(echart1.resize);
+
+                        var echart2 = echarts.init(chartEl2.get(0));
+                        echart2.setOption(option2);
+                        $(window).resize(echart2.resize);
+
+                        echart1.connect([echart2]);
+                        echart2.connect([echart1]);
                     }
                 });
+
+
                 
+
+
             }
 
-
-            function displyChart(chart) {
-                var data = toPlotyData(chart);
-
-                var panel = createCollapeContainer(chart.Name);
-                var chartEl = $('<div></div>');
-                panel.find('.panel-body').append(chartEl);
-                var isRenderd = false;
-                $(panel).on('shown.bs.collapse', function () {
-                    if (!isRenderd) {
-                        Plotly.newPlot(chartEl.get(0), data);
-                        isRenderd = true;
-                    }
-                });
-              
-
-                var series = $.map(chart.Series, function (s) {
+            function getEchartBaseOptions(chart) {
+                var series =  $.map(chart.Series, function (s) {
                     var track = {
-                        name: 'xxx',
-                        type: 'line'
+                        name: s.Name,
+                        type: getSeriesType(s.SeriesType),
+                        symbol: 'none'
                     };
                     track.data = [];
                     $.each(s.Values, function (k, item) {
                         var time;
                         if (isNaN(item.x)) {
-                            time =  moment(item.x).toDate();
+                            time = moment(item.x).toDate();
                         } else {
                             time = new Date(item.x * 1000);
                         }
@@ -175,20 +182,23 @@
                     return track;
                 });
 
+                var legendData = $.map(series, function (x) {
+                    return x.name;
+                });
 
-                option = {
-
+                return  {
                     tooltip: {
                         trigger: 'axis',
+                        showContent: false,
                         axisPointer: {
                             type: 'cross'
                         },
                         transitionDuration: 0,
                         showDelay: 0,
-                        //formatter: 'vvv'
+                        formatter: null
                     },
                     legend: {
-                        data: ['xx', '最低气温']
+                        data: legendData
                     },
                     toolbox: {
                         show: true,
@@ -199,7 +209,6 @@
                             restore: { show: true },
                         }
                     },
-                    calculable: true,
                     xAxis: [
                         {
                             type: 'time',
@@ -209,34 +218,34 @@
                     yAxis: [
                         {
                             type: 'value',
-                            scale: true,
-                            axisLabel: {
-                                formatter: '{value} $'
-                            }
+                            scale: true
                         }
                     ],
                     series: series,
                     dataZoom: {
                         show: true,
-                        realtime: true,
-                        start: 50,
-                        end: 100
+                        realtime: true
                     },
                 };
+            }
 
-                console.log('xAxis', option);
+            function displyChart(chart) {
+                var panel = createCollapeContainer(chart.Name);
+                var chartEl = $('<div style="width:100%; height: 500px;"></div>');
+                panel.find('.panel-body').append(chartEl);
+                var isRenderd = false;
+                $(panel).on('shown.bs.collapse', function () {
+                    if (!isRenderd) {
+                        isRenderd = true;
 
-
-                chart_ = echarts.init($('#stack-chart').get(0));
-                chart_.setOption(option);
-                chart_.setTheme({
-                    line: {
-                        smooth: false,
-                        symbol: 'emptyCircle'
+                        var echart = echarts.init(chartEl.get(0));
+                        echart.setOption(getEchartBaseOptions(chart));
+                        $(window).resize(echart.resize);
                     }
                 });
-                $(window).resize(chart_.resize);
 
+
+                /*
                 var originalFuc = chart_.component.tooltip._styleAxisPointer;
                 chart_.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
                     var self = chart_.component.tooltip;
@@ -251,7 +260,7 @@
                             + this.component.yAxis.getAxis(0).getValueFromCoord(y)
                             + ' )'
                     ).replace('  , ', ' ').replace(' ,  ', ' ');
-                };
+                };*/
 
 
 //if (chart.ChartType == 0) {
@@ -271,21 +280,19 @@
                 }*/
             }
 
-
-
             function getSeriesType(id) {
                 switch (id) {
                 case 0:
-                    return 'scatter';
+                    return 'line';
                 case 1:
                     return 'scatter';
                 case 2:
-                    return 'scatter';
+                    return 'line';
                 case 3:
                     return 'bar';
 
                 default:
-                    return 'scatter';
+                    return 'line';
                 }
             }
 
@@ -361,15 +368,21 @@
                 });
 
 
-                var chartEl = $('<div></div>');
+                var chartEl = $('<div style="width:100%; height: 500px;"></div>');
                 panel.find('.panel-body').append(navTabs).append(chartEl);
 
                 var firstTab = navTabs.find('li:first-child');
                 firstTab.addClass('active');
 
                 
-                var display = function(key) {
-                    Plotly.Plots.purge(chartEl.get(0));
+                var display = function (key) {
+                    var echart = echarts.init(chartEl.get(0));
+                    echart.setOption(getEchartBaseOptions(charts[key]));
+                    $(window).resize(echart.resize);
+
+                    console.log(charts[key])
+
+                    //Plotly.Plots.purge(chartEl.get(0));
                     var data = toPlotyData(charts[key]);
                     $(data).each(function (key, item) {
                         console.log(item);
@@ -378,8 +391,8 @@
                             symbol: item.name == 'Buy' ? 'triangle-up' : 'triangle-down'
                         };
                     });
-                    console.log(data);
-                    Plotly.plot(chartEl.get(0), data);
+                    //console.log(data);
+                    //Plotly.plot(chartEl.get(0), data);
                 };
 
 
@@ -450,7 +463,7 @@
             $(function() {
                 displayStrategyEquity(_data.Charts['Strategy Equity']);
                 $.each(_data.Charts, function(k, v) {
-                    if (v.Name != 'Strategy Equity' && v.Name == 'EURUSD_EMA') {
+                    if (v.Name != 'Strategy Equity') {
                         displyChart(v);
                     }
                 });
