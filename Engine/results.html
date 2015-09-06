@@ -133,6 +133,7 @@
                         var echart1 = echarts.init(chartEl1.get(0));
                         echart1.setOption(option1);
                         $(window).resize(echart1.resize);
+                        hackEchartToFixedDisplayIssues(echart1);
 
                         var echart2 = echarts.init(chartEl2.get(0));
                         echart2.setOption(option2);
@@ -244,26 +245,14 @@
                         var echart = echarts.init(chartEl.get(0));
                         echart.setOption(getEchartBaseOptions(chart));
                         $(window).resize(echart.resize);
+
+                        hackEchartToFixedDisplayIssues(echart);
                     }
                 });
 
 
-                /*
-                var originalFuc = chart_.component.tooltip._styleAxisPointer;
-                chart_.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
-                    var self = chart_.component.tooltip;
-                    originalFuc.apply(self, arguments);
+                
 
-
-                    self._axisCrossShape.style.text = ('( '
-                            + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format()
-                            + ' , '
-                            + this.component.yAxis.getAxis(0).getValueFromCoord(y)
-                            + ' , '
-                            + this.component.yAxis.getAxis(0).getValueFromCoord(y)
-                            + ' )'
-                    ).replace('  , ', ' ').replace(' ,  ', ' ');
-                };*/
 
 
 //if (chart.ChartType == 0) {
@@ -281,6 +270,37 @@
                     Plotly.newPlot(plot.get(0), data, layout);
 
                 }*/
+            }
+
+            function hackEchartToFixedDisplayIssues(echart) {
+                // hack this function to modify echart to display date correctly in cross mode
+                var originalFuc = echart.component.tooltip._styleAxisPointer;
+                echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
+                    var self = echart.component.tooltip;
+                    originalFuc.apply(self, arguments);
+
+                    // calc y calue
+                    var yAxis = this.component.yAxis.getAxis(0);
+                    var coord = y;
+                    coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
+                    coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
+                    var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
+
+                    // adjust decimal point base on max min diff
+                    if ((yAxis._max - yAxis._min) < 5) {
+                        yVal = yVal.toFixed(4) - 0;
+                    } else {
+                        yVal = yVal.toFixed(2) - 0;
+                    }
+
+                    // override text to changed display value
+                    self._axisCrossShape.style.text = ('( '
+                            + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
+                            + ' , '
+                            + yVal
+                            + ' )'
+                    ).replace('  , ', ' ').replace(' ,  ', ' ');
+                };
             }
 
             function getSeriesType(id) {
