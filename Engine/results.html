@@ -10,6 +10,9 @@
     <body>
         
         <div class="container">
+            
+            <h3>Results</h3>
+
             <div id="plots"></div>
             
             
@@ -92,28 +95,6 @@
                 return panel;
             }
 
-            function toPlotyData(chart) {
-                return $.map(chart.Series, function (s) {
-                    var track = {
-                        type: getSeriesType(s.SeriesType),
-                        name: s.Name
-                    };
-                    track.x = $.map(s.Values, function (item) {
-                        if (isNaN(item.x)) {
-                            var d = moment(item.x);
-                            console.log(d.isValid());
-                            return d.toDate();
-                        } else {
-                            return new Date(item.x * 1000);
-                        }
-                    });
-                    track.y = $.map(s.Values, function (item) {
-                        return item.y;
-                    });
-                    return track;
-                });
-            }
-
             function displayStrategyEquity(chart) {
                 var panel = createCollapeContainer('Strategy Equity');
                 var option1 = getEchartBaseOptions(chart);
@@ -127,10 +108,16 @@
                     y: 5,
                 };
 
+                option2.tooltip.showContent = true;
+                option2.tooltip.trigger = 'item';
+                option2.tooltip.axisPointer.type = 'none';
+                option2.tooltip.showDelay = 20;
+                option2.tooltip.transitionDuration = 0.4;
+                option2.tooltip.formatter = '{c}';
 
                 option1.dataZoom = null;
 
-                console.log(option1)
+    
             
 
                 var chartEl1 = $('<div style="width:100%; height: 400px;"></div>');
@@ -203,10 +190,26 @@
                     toolbox: {
                         show: true,
                         feature: {
-                            mark: { show: true },
-                            dataView: { show: true, readOnly: false },
-                            magicType: { show: true, type: ['line', 'bar'] },
-                            restore: { show: true },
+                            mark: {
+                                show: true,
+                                title: {
+                                    mark: 'Mark',
+                                    markUndo: 'Undo',
+                                    markClear: 'Clear'
+                                }
+                            },
+                            //magicType: { show: true, type: ['line', 'bar'] },
+                            restore: {
+                                show: true,
+                                title: 'Reset'
+                            },
+                            dataZoom: {
+                                show: true,
+                                title: {
+                                    dataZoom: 'Zoom',
+                                    dataZoomReset:'Reset Zoom'
+                                }
+                            }
                         }
                     },
                     xAxis: [
@@ -376,23 +379,25 @@
 
                 
                 var display = function (key) {
-                    var echart = echarts.init(chartEl.get(0));
-                    echart.setOption(getEchartBaseOptions(charts[key]));
-                    $(window).resize(echart.resize);
+                    var option = getEchartBaseOptions(charts[key]);
+                    option.tooltip.showContent = true;
+                    option.tooltip.trigger = 'item';
+                    option.tooltip.axisPointer.type = 'none';
 
-                    console.log(charts[key])
-
-                    //Plotly.Plots.purge(chartEl.get(0));
-                    var data = toPlotyData(charts[key]);
-                    $(data).each(function (key, item) {
-                        console.log(item);
-                        item.mode = 'markers';
-                        item.marker = {
+                    $(option.series).each(function (key, item) {
+                        item.type = 'scatter';
+                        item.symbol = 'triangle';
+                        item.symbolSize = 6;
+                        if (item.name == 'Sell')
+                            item.symbolRotate = 180;
+                        /*item.marker = {
                             symbol: item.name == 'Buy' ? 'triangle-up' : 'triangle-down'
-                        };
+                        };*/
                     });
-                    //console.log(data);
-                    //Plotly.plot(chartEl.get(0), data);
+
+                    var echart = echarts.init(chartEl.get(0));
+                    echart.setOption(option);
+                    $(window).resize(echart.resize);
                 };
 
 
