@@ -425,6 +425,8 @@ namespace QuantConnect.Lean.Engine.Results
             var html = File.ReadAllText(templateHtmlFile);
             html = html.Replace("[[JSON_DATA]]", serialized);
             File.WriteAllText(resultFileName, html);
+
+            System.Diagnostics.Process.Start(resultFileName);
         }
 
         /// <summary>
