@@ -208,6 +208,7 @@
     <Compile Include="RealTime\IRealTimeHandler.cs" />
     <Compile Include="RealTime\ScheduledEventFactory.cs" />
     <Compile Include="Results\DesktopResultHandler.cs" />
+    <Compile Include="Results\HtmlResultHandler.cs" />
     <Compile Include="Results\IResultHandler.cs" />
     <Compile Include="Setup\BrokerageSetupHandler.cs" />
     <Compile Include="Setup\SetupHandler.cs" />
@@ -310,7 +311,9 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="results.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <PropertyGroup>

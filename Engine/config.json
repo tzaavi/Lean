@@ -9,7 +9,7 @@
     "environment": "backtesting",
 
     // algorithm class selector
-    "algorithm-type-name": "BasicTemplateAlgorithm",
+    "algorithm-type-name": "MyAlgorithm",
 
     // Algorithm language selector - options CSharp, FSharp, VisualBasic, Python, Java
     "algorithm-language": "CSharp", 
@@ -56,7 +56,7 @@
             "live-mode": false,
 
             "setup-handler": "QuantConnect.Lean.Engine.Setup.ConsoleSetupHandler",
-            "result-handler": "QuantConnect.Lean.Engine.Results.ConsoleResultHandler",
+            "result-handler": "QuantConnect.Lean.Engine.Results.HtmlResultHandler",
             "data-feed-handler": "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataFeed",
             "real-time-handler": "QuantConnect.Lean.Engine.RealTime.BacktestingRealTimeHandler",
             "transaction-handler": "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
