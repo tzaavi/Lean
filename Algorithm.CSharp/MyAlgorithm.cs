@@ -11,18 +11,23 @@ namespace QuantConnect.Algorithm.CSharp
         {
             private ExponentialMovingAverage fast;
             private ExponentialMovingAverage slow;
+            private MovingAverageConvergenceDivergence macd;
+            private AverageDirectionalIndex adx;
 
             public override void Initialize()
             {
-                SetStartDate(2014, 05, 01);  //Set Start Date
-                SetEndDate(2014, 05, 15);    //Set End Date
+                SetStartDate(2015, 09, 02);  //Set Start Date
+                SetEndDate(2015, 09, 02);    //Set End Date
                 SetCash(100000);             //Set Strategy Cash
 
-                AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Hour);
-                AddSecurity(SecurityType.Forex, "NZDUSD", Resolution.Hour);
+                AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Minute, "oanda", true, 0, false);
+                AddSecurity(SecurityType.Forex, "EURJPY", Resolution.Minute, "oanda", true, 0, false);
+                
 
-                fast = EMA("EURUSD", 15, Resolution.Hour);
-                slow = EMA("NZDUSD", 30, Resolution.Hour);
+                fast = EMA("EURUSD", 15, Resolution.Minute);
+                slow = EMA("EURUSD", 30, Resolution.Minute);
+                macd = MACD("EURUSD", 10, 20, 7, MovingAverageType.Exponential, Resolution.Minute);
+                adx = ADX("EURUSD", 14, Resolution.Minute);
             }
 
             /// <summary>
@@ -54,19 +59,19 @@ namespace QuantConnect.Algorithm.CSharp
                     }
 
 
-                    var holdingNZDUSD = Portfolio["NZDUSD"];
+                    var holdingNZDUSD = Portfolio["EURJPY"];
                     bool investedNZDUSD = false;
 
                     if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity < 0) && !investedNZDUSD)
                     {
-                        Order("NZDUSD", Math.Abs(holdingNZDUSD.Quantity) + 100);
+                        Order("EURJPY", Math.Abs(holdingNZDUSD.Quantity) + 100);
                         investedNZDUSD = true;
                         Debug("--Purchased Stock");
                     }
 
                     if ((holdingNZDUSD.Quantity == 0 || holdingNZDUSD.Quantity > 0) && !investedNZDUSD)
                     {
-                        Order("NZDUSD", -(holdingNZDUSD.Quantity + 100));
+                        Order("EURJPY", -(holdingNZDUSD.Quantity + 100));
                         investedNZDUSD = true;
                         Debug("--Purchased Short");
                     }
@@ -91,7 +96,10 @@ namespace QuantConnect.Algorithm.CSharp
 
 
                 PlotIndicator("EURUSD_EMA", fast);
-                PlotIndicator("NZDUSD_EMA", slow);
+                PlotIndicator("EURUSD_EMA", slow);
+                PlotIndicator("EURUSD_MACD", macd);
+                PlotIndicator("ADX", adx);
+                Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
             }
         }
     }
