@@ -15,8 +15,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
-            SetStartDate(2015, 09, 02);
-            SetEndDate(2015, 09, 02);
+            SetStartDate(2015, 08, 19);
+            SetEndDate(2015, 08, 29);
             
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
@@ -33,6 +33,7 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void OnMinute(Object o, TradeBar bar)
         {
+
             if (Portfolio.Invested)
             {
                 if (ShouldClosePosition())
@@ -53,7 +54,7 @@ namespace QuantConnect.Algorithm.CSharp
                 }
             }
 
-           
+
 
             Plot("Price", "BB_mid", bb.MiddleBand);
             Plot("Price", "BB_upper", bb.UpperBand);
@@ -97,6 +98,11 @@ namespace QuantConnect.Algorithm.CSharp
             var HL = Math.Abs(bar.High - bar.Low);
             decimal upperShadow;
             decimal lowerShadow;
+
+            if (HL == 0)
+            {
+                return false;
+            }
 
             if (bar.Close > bar.Open)
             {
