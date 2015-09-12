@@ -41,6 +41,7 @@ namespace QuantConnect.Algorithm.CSharp
             Plot("Price", "SAR", sar.Current);
             Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
             PlotIndicator("EMA", ema);
+            PlotIndicator("sar", sar);
         }
 
         public bool ChekcLongOpportunity(TradeBar bar)

@@ -9,13 +9,16 @@ namespace QuantConnect.Indicators
     /// </summary>
     public class ParabolicStopAndReversal : TradeBarIndicator
     {
-        private Position _position;
+        private bool _isLong;
         private TradeBar _previousBar;
-        private decimal _previousSar;
-        private decimal _previousEP;
+        private decimal _sar;
+        private decimal _ep;
         private bool _isPositionChanged;
         private bool _isReady;
-        private decimal _previousAF = 0.02m;
+        private decimal _af = 0.02m;
+        private decimal _maxAf = 0.2m;
+        private decimal _afIncrement = 0.02m;
+        private decimal _outputSar;
 
 
         public ParabolicStopAndReversal() : base("SAR")
@@ -33,36 +36,24 @@ namespace QuantConnect.Indicators
             // init position
             if (currentBar.Close < _previousBar.Close)
             {
-                _position = Position.Short;
+                _isLong = false;
             }
-            
-            if (currentBar.Close >= _previousBar.Close)
+            else
             {
-                _position = Position.Long;
-            }
-
-            
-            // init sar
-            if (_position == Position.Short)
-            {
-                _previousSar = _previousBar.High;
-            }
-
-            if (_position == Position.Long)
-            {
-                _previousSar = _previousBar.Low;
+                _isLong = true;
             }
 
 
-            // init Extreme price
-            if (_position == Position.Short)
+            // init sar and Extreme price
+            if (_isLong)
             {
-                _previousEP = Math.Min(currentBar.Low, _previousBar.Low);
+                _ep = Math.Min(currentBar.High, _previousBar.High);
+                _sar = _previousBar.Low;
             }
-
-            if (_position == Position.Long)
+            else
             {
-                _previousEP = Math.Min(currentBar.High, _previousBar.High);
+                _ep = Math.Min(currentBar.Low, _previousBar.Low);
+                _sar = _previousBar.High;
             }
 
             _isReady = false;
@@ -79,63 +70,138 @@ namespace QuantConnect.Indicators
             if (Samples == 2)
             {
                 Init(input);
-                return 0;
             }
-                
 
-            // Determine current Extreme Price (EP)
-            var currentEP = _position == Position.Short ? Math.Min(_previousEP, input.Low) : Math.Max(_previousEP, input.High);
+            if (_isLong)
+            {
+                HandleLongPosition(input);
+            }
+            else
+            {
+                HandleShortPosition(input);
+            }
 
-
-            // Determine Acceleration Factor (AF)
-            var currentAF = _previousAF;
-            if (!_isPositionChanged && _previousEP != currentEP && currentAF < 0.2m)
-                currentAF += 0.02m;
-
-            // Calculate SAR
-            var currentSAR = _previousSar + _previousAF*(_previousEP - _previousSar);
-
-
-            // set "previous values" for next iteration
-            _isPositionChanged = false;
-            _previousEP = currentEP;
             _previousBar = input;
-            _previousSar = currentSAR;
-            _previousAF = currentAF;
 
-            var nextPosition = _position;
+            return _outputSar;
+        }
 
-            if (_position == Position.Long && currentSAR >= input.Low)
+        private void HandleLongPosition(TradeBar currentBar)
+        {
+            // Switch to short if the low penetrates the SAR value.
+            if (currentBar.Low <= _sar)
             {
-                nextPosition = Position.Short;
-                _isPositionChanged = true;
-                _previousSar = _previousEP;
-                _previousEP = input.Low;
-                _previousAF = 0.02m;
+                // Switch and Overide the SAR with the ep
+                _isLong = false;
+                _sar = _ep;
+
+                // Make sure the overide SAR is within yesterday's and today's range.
+                if (_sar < _previousBar.High)
+                    _sar = _previousBar.High;
+                if (_sar < currentBar.High)
+                    _sar = currentBar.High;
+
+                // Output the overide SAR 
+                _outputSar = _sar;
+
+                // Adjust af and ep
+                _af = 0.02m;
+                _ep = currentBar.Low;
+
+                // Calculate the new SAR
+                _sar = _sar + _af*(_ep - _sar);
+
+                // Make sure the new SAR is within yesterday's and today's range.
+                if (_sar < _previousBar.High)
+                    _sar = _previousBar.High;
+                if (_sar < currentBar.High)
+                    _sar = currentBar.High;
+
             }
 
-            if (_position == Position.Short && currentSAR <= input.High)
+            // No switch
+            else
             {
-                nextPosition = Position.Long;
-                _isPositionChanged = true;
-                _previousSar = _previousEP;
-                _previousEP = input.High;
-                _previousAF = 0.02m;
+                // Output the SAR (was calculated in the previous iteration) 
+                _outputSar = _sar;
+
+                // Adjust af and ep.
+                if (currentBar.High > _ep)
+                {
+                    _ep = currentBar.High;
+                    _af += _afIncrement;
+                    if (_af > _maxAf)
+                        _af = _maxAf;
+                }
+
+                // Calculate the new SAR
+                _sar = _sar + _af * (_ep - _sar);
+
+                // Make sure the new SAR is within yesterday's and today's range.
+                if (_sar > _previousBar.Low)
+                    _sar = _previousBar.Low;
+                if (_sar > currentBar.Low)
+                    _sar = currentBar.Low;
             }
-
-            _position = nextPosition;
-
-
-            return currentSAR;
         }
 
 
-
-
-        private enum Position
+        private void HandleShortPosition(TradeBar currentBar)
         {
-            Long,
-            Short
+            // Switch to long if the high penetrates the SAR value.
+            if (currentBar.High >= _sar)
+            {
+                // Switch and Overide the SAR with the ep
+                _isLong = true;
+                _sar = _ep;
+
+                // Make sure the overide SAR is within yesterday's and today's range.
+                if (_sar > _previousBar.Low)
+                    _sar = _previousBar.Low;
+                if (_sar > currentBar.Low)
+                    _sar = currentBar.Low;
+
+                // Output the overide SAR 
+                _outputSar = _sar;
+
+                // Adjust af and ep
+                _af = 0.02m;
+                _ep = currentBar.High;
+
+                // Calculate the new SAR
+                _sar = _sar + _af * (_ep - _sar);
+
+                // Make sure the new SAR is within yesterday's and today's range.
+                if (_sar > _previousBar.Low)
+                    _sar = _previousBar.Low;
+                if (_sar > currentBar.Low)
+                    _sar = currentBar.Low;
+            }
+
+            //No switch
+            else
+            {
+                // Output the SAR (was calculated in the previous iteration)
+                _outputSar = _sar;
+
+                // Adjust af and ep.
+                if (currentBar.Low < _ep)
+                {
+                    _ep = currentBar.Low;
+                    _af += _afIncrement;
+                    if (_af > _maxAf)
+                        _af = _maxAf;
+                }
+
+                // Calculate the new SAR
+                _sar = _sar + _af * (_ep - _sar);
+
+                // Make sure the new SAR is within yesterday's and today's range.
+                if (_sar < _previousBar.High)
+                    _sar = _previousBar.High;
+                if (_sar < currentBar.High)
+                    _sar = currentBar.High;
+            }
         }
 
       
