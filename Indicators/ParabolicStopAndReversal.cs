@@ -3,9 +3,9 @@ using QuantConnect.Data.Market;
 
 namespace QuantConnect.Indicators
 {
-    // http://www.esignalcentral.com/support/futuresource/workstation/help/charts/studies/parab.htm
     /// <summary>
-    ///     P = Position
+    /// Parabolic SAR Indicator 
+    /// Base on TA-Lib implementation
     /// </summary>
     public class ParabolicStopAndReversal : TradeBarIndicator
     {
@@ -13,15 +13,22 @@ namespace QuantConnect.Indicators
         private TradeBar _previousBar;
         private decimal _sar;
         private decimal _ep;
-        private bool _isPositionChanged;
         private bool _isReady;
         private decimal _af = 0.02m;
+        private decimal _afInit = 0.02m;
         private decimal _maxAf = 0.2m;
         private decimal _afIncrement = 0.02m;
         private decimal _outputSar;
 
 
-        public ParabolicStopAndReversal() : base("SAR")
+        /// <summary>
+        /// Create new Parabolic SAR
+        /// </summary>
+        /// <param name="start">Start value for acceleration factor</param>
+        /// <param name="increment">Acceleration factor increment</param>
+        /// <param name="max">Max value for acceleration factor</param>
+        public ParabolicStopAndReversal(decimal start = 0.02m, decimal increment = 0.02m, decimal max = 0.2m) 
+            : base(string.Format("SAR({0},{1},{2})", start, increment, max))
         {
         }
 
@@ -32,16 +39,8 @@ namespace QuantConnect.Indicators
 
         private void Init(TradeBar currentBar)
         {
-            
             // init position
-            if (currentBar.Close < _previousBar.Close)
-            {
-                _isLong = false;
-            }
-            else
-            {
-                _isLong = true;
-            }
+            _isLong = currentBar.Close >= _previousBar.Close;
 
 
             // init sar and Extreme price
@@ -55,8 +54,6 @@ namespace QuantConnect.Indicators
                 _ep = Math.Min(currentBar.Low, _previousBar.Low);
                 _sar = _previousBar.High;
             }
-
-            _isReady = false;
         }
 
         protected override decimal ComputeNextValue(TradeBar input)
@@ -70,6 +67,7 @@ namespace QuantConnect.Indicators
             if (Samples == 2)
             {
                 Init(input);
+                _isReady = false;
             }
 
             if (_isLong)
@@ -105,7 +103,7 @@ namespace QuantConnect.Indicators
                 _outputSar = _sar;
 
                 // Adjust af and ep
-                _af = 0.02m;
+                _af = _afInit;
                 _ep = currentBar.Low;
 
                 // Calculate the new SAR
@@ -165,7 +163,7 @@ namespace QuantConnect.Indicators
                 _outputSar = _sar;
 
                 // Adjust af and ep
-                _af = 0.02m;
+                _af = _afInit;
                 _ep = currentBar.High;
 
                 // Calculate the new SAR
@@ -203,7 +201,5 @@ namespace QuantConnect.Indicators
                     _sar = currentBar.High;
             }
         }
-
-      
     }
 }
