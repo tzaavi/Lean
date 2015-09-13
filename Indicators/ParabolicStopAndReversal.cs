@@ -67,7 +67,9 @@ namespace QuantConnect.Indicators
             if (Samples == 2)
             {
                 Init(input);
-                _isReady = false;
+                _isReady = true;
+                _previousBar = input;
+                return _sar;
             }
 
             if (_isLong)

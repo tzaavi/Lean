@@ -11,6 +11,7 @@ namespace QuantConnect.Algorithm.CSharp
     {
         private ExponentialMovingAverage ema;
         private ParabolicStopAndReversal sar;
+        private MovingAverageConvergenceDivergence macd;
 
 
         public override void Initialize()
@@ -22,6 +23,8 @@ namespace QuantConnect.Algorithm.CSharp
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
 
             ema = EMA("EURUSD", 125);
+            macd = MACD("EURUSD", 12, 26, 9);
+
             sar = new ParabolicStopAndReversal();
             RegisterIndicator("EURUSD", sar, Resolution.Minute);
 
@@ -42,6 +45,7 @@ namespace QuantConnect.Algorithm.CSharp
             Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
             PlotIndicator("EMA", ema);
             PlotIndicator("sar", sar);
+            PlotIndicator("MACD", macd);
         }
 
         public bool ChekcLongOpportunity(TradeBar bar)
