@@ -32,38 +32,37 @@ namespace QuantConnect.Indicators
         {
         }
 
+        /// <summary>
+        /// Gets a flag indicating when this indicator is ready and fully initialized
+        /// </summary>
         public override bool IsReady
         {
             get { return _isReady; }
         }
 
-        private void Init(TradeBar currentBar)
+        /// <summary>
+        /// Resets this indicator to its initial state
+        /// </summary>
+        public override void Reset()
         {
-            // init position
-            _isLong = currentBar.Close >= _previousBar.Close;
-
-
-            // init sar and Extreme price
-            if (_isLong)
-            {
-                _ep = Math.Min(currentBar.High, _previousBar.High);
-                _sar = _previousBar.Low;
-            }
-            else
-            {
-                _ep = Math.Min(currentBar.Low, _previousBar.Low);
-                _sar = _previousBar.High;
-            }
+            base.Reset();
         }
 
+        /// <summary>
+        /// Computes the next value of this indicator from the given state
+        /// </summary>
+        /// <param name="input">The trade bar input given to the indicator</param>
+        /// <returns>A new value for this indicator</returns>
         protected override decimal ComputeNextValue(TradeBar input)
         {
-            if (_previousBar == null)
+            // On first iteration we can’t produce an SAR value so we save the current bar and return zero
+            if (Samples == 1)
             {
                 _previousBar = input;
                 return 0;
             }
 
+            // On second iteration we initiate the position the extreme point and the SAR
             if (Samples == 2)
             {
                 Init(input);
@@ -86,6 +85,31 @@ namespace QuantConnect.Indicators
             return _outputSar;
         }
 
+        /// <summary>
+        /// Initialize the indicator values 
+        /// </summary>
+        private void Init(TradeBar currentBar)
+        {
+            // init position
+            _isLong = currentBar.Close >= _previousBar.Close;
+
+
+            // init sar and Extreme price
+            if (_isLong)
+            {
+                _ep = Math.Min(currentBar.High, _previousBar.High);
+                _sar = _previousBar.Low;
+            }
+            else
+            {
+                _ep = Math.Min(currentBar.Low, _previousBar.Low);
+                _sar = _previousBar.High;
+            }
+        }
+
+        /// <summary>
+        /// Calculate indicator value when the position is long
+        /// </summary>
         private void HandleLongPosition(TradeBar currentBar)
         {
             // Switch to short if the low penetrates the SAR value.
@@ -145,7 +169,9 @@ namespace QuantConnect.Indicators
             }
         }
 
-
+        /// <summary>
+        /// Calculate indicator value when the position is short
+        /// </summary>
         private void HandleShortPosition(TradeBar currentBar)
         {
             // Switch to long if the high penetrates the SAR value.
