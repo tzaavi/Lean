@@ -14,22 +14,38 @@ namespace QuantConnect.Indicators
         private decimal _sar;
         private decimal _ep;
         private bool _isReady;
-        private decimal _af = 0.02m;
-        private decimal _afInit = 0.02m;
-        private decimal _maxAf = 0.2m;
-        private decimal _afIncrement = 0.02m;
         private decimal _outputSar;
-
+        private decimal _af;
+        private readonly decimal _afInit;
+        private readonly decimal _afMax;
+        private readonly decimal _afIncrement;
 
         /// <summary>
         /// Create new Parabolic SAR
         /// </summary>
-        /// <param name="start">Start value for acceleration factor</param>
-        /// <param name="increment">Acceleration factor increment</param>
-        /// <param name="max">Max value for acceleration factor</param>
-        public ParabolicStopAndReversal(decimal start = 0.02m, decimal increment = 0.02m, decimal max = 0.2m) 
-            : base(string.Format("SAR({0},{1},{2})", start, increment, max))
+        /// <param name="name">The name of this indicator</param>
+        /// <param name="afStart">Acceleration factor start value</param>
+        /// <param name="afIncrement">Acceleration factor increment value</param>
+        /// <param name="afMax">Acceleration factor max value</param>
+        public ParabolicStopAndReversal(string name ,decimal afStart = 0.02m, decimal afIncrement = 0.02m, decimal afMax = 0.2m)
+            : base(name)
         {
+            _afInit = afStart;
+            _af = afStart;
+            _afIncrement = afIncrement;
+            _afMax = afMax;
+        }
+        
+        /// <summary>
+        /// Create new Parabolic SAR
+        /// </summary>
+        /// <param name="afStart">Acceleration factor start value</param>
+        /// <param name="afIncrement">Acceleration factor increment value</param>
+        /// <param name="afMax">Acceleration factor max value</param>
+        public ParabolicStopAndReversal(decimal afStart = 0.02m, decimal afIncrement = 0.02m, decimal afMax = 0.2m)
+            : this(string.Format("PSAR({0},{1},{2})", afStart, afIncrement, afMax))
+        {
+ 
         }
 
         /// <summary>
@@ -45,6 +61,7 @@ namespace QuantConnect.Indicators
         /// </summary>
         public override void Reset()
         {
+            _af = _afInit;
             base.Reset();
         }
 
@@ -154,8 +171,8 @@ namespace QuantConnect.Indicators
                 {
                     _ep = currentBar.High;
                     _af += _afIncrement;
-                    if (_af > _maxAf)
-                        _af = _maxAf;
+                    if (_af > _afMax)
+                        _af = _afMax;
                 }
 
                 // Calculate the new SAR
@@ -215,8 +232,8 @@ namespace QuantConnect.Indicators
                 {
                     _ep = currentBar.Low;
                     _af += _afIncrement;
-                    if (_af > _maxAf)
-                        _af = _maxAf;
+                    if (_af > _afMax)
+                        _af = _afMax;
                 }
 
                 // Calculate the new SAR

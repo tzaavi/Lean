@@ -24,9 +24,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             ema = EMA("EURUSD", 125);
             macd = MACD("EURUSD", 12, 26, 9);
-
-            sar = new ParabolicStopAndReversal();
-            RegisterIndicator("EURUSD", sar, Resolution.Minute);
+            sar = PSAR("EURUSD", resolution: Resolution.Minute);
 
             var consolidator = new TickConsolidator(TimeSpan.FromMinutes(1));
             consolidator.DataConsolidated += OnMinute;
