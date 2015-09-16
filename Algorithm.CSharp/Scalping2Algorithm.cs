@@ -27,6 +27,10 @@ namespace QuantConnect.Algorithm.CSharp
             macd = MACD("EURUSD", 12, 26, 9);
             sar = PSAR("EURUSD", resolution: Resolution.Minute);
 
+            PlotIndicator("EMA", ema);
+            PlotIndicator("sar", sar);
+            PlotIndicator("MACD", macd);
+
             var consolidator = new TickConsolidator(TimeSpan.FromMinutes(1));
             consolidator.DataConsolidated += OnMinute;
             SubscriptionManager.AddConsolidator("EURUSD", consolidator);
@@ -52,9 +56,6 @@ namespace QuantConnect.Algorithm.CSharp
             Plot("Price", "close", bar.Close);
             Plot("Price", "EMA", ema.Current);
             Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
-            PlotIndicator("EMA", ema);
-            PlotIndicator("sar", sar);
-            PlotIndicator("MACD", macd);
         }
 
         public void HandleLongOpportunity(TradeBar bar)
