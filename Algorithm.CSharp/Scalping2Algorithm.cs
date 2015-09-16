@@ -12,11 +12,12 @@ namespace QuantConnect.Algorithm.CSharp
         private ExponentialMovingAverage ema;
         private ParabolicStopAndReversal sar;
         private MovingAverageConvergenceDivergence macd;
+        private decimal stopLoss;
 
 
         public override void Initialize()
         {
-            SetStartDate(2015, 09, 08);
+            SetStartDate(2015, 08, 19);
             SetEndDate(2015, 09, 08);
             
 
@@ -35,20 +36,64 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void OnMinute(Object o, TradeBar bar)
         {
+            if (Portfolio.Invested)
+            {
+                HanldeOpenPoistoin(bar);
+            }
+            else
+            {
+                HandleLongOpportunity(bar);    
+                HandleShortOpportunity(bar);
+            }
 
+            if (sar.IsReady)
+                Plot("Price", "SAR", sar.Current);
 
             Plot("Price", "close", bar.Close);
-            //Plot("Price", "EMA-125", ema.Current);
-            Plot("Price", "SAR", sar.Current);
+            Plot("Price", "EMA", ema.Current);
             Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
             PlotIndicator("EMA", ema);
             PlotIndicator("sar", sar);
             PlotIndicator("MACD", macd);
         }
 
-        public bool ChekcLongOpportunity(TradeBar bar)
+        public void HandleLongOpportunity(TradeBar bar)
         {
-            return false;
+            if (bar.Close > ema &&
+                bar.Close > sar &&
+                macd > 0)
+            {
+                stopLoss = sar - 0.0001m;
+                Order("EURUSD", 10000);
+            }
+        }
+
+        public void HandleShortOpportunity(TradeBar bar)
+        {
+            if (bar.Close < ema &&
+                bar.Close < sar &&
+                macd < 0)
+            {
+                stopLoss = sar + 0.0001m;
+                Order("EURUSD", -10000);
+            }
+        }
+
+        public void HanldeOpenPoistoin(TradeBar bar)
+        {
+            var holding = Portfolio["EURUSD"];
+
+            var pips = (holding.Price - holding.AveragePrice) * 10000;
+
+            if (holding.IsLong && (pips > 20 || bar.Price < stopLoss))
+            {
+                Liquidate();
+            }
+
+            if (holding.IsShort && (pips > 20 || bar.Price > stopLoss))
+            {
+                Liquidate();
+            }
         }
 
         public void OnData(Ticks data)
