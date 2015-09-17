@@ -13,20 +13,19 @@
  * limitations under the License.
 */
 
-using System;
 using NUnit.Framework;
 using QuantConnect.Indicators;
 
 namespace QuantConnect.Tests.Indicators
 {
     [TestFixture]
-    public class ParabolicStopAndReversalTests
+    public class ParabolicStopAndReverseTests
     {
         [Test]
         public void ComparesWithExternalData()
         {
-            var psar = new ParabolicStopAndReversal();
+            var psar = new ParabolicStopAndReverse();
             TestHelper.TestIndicator(psar, "spy_parabolic_SAR.txt", "Parabolic SAR 0.02 0.20");
-        }      
+        }
     }
 }

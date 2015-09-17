@@ -10,7 +10,7 @@ namespace QuantConnect.Algorithm.CSharp
     public class Scalping2Algorithm : QCAlgorithm
     {
         private ExponentialMovingAverage ema;
-        private ParabolicStopAndReversal sar;
+        private ParabolicStopAndReverse sar;
         private MovingAverageConvergenceDivergence macd;
         private decimal stopLoss;
 

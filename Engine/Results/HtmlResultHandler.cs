@@ -28,6 +28,7 @@ using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
+using QuantConnect.Statistics;
 
 namespace QuantConnect.Lean.Engine.Results
 {
@@ -399,28 +400,28 @@ namespace QuantConnect.Lean.Engine.Results
         /// <param name="orders">Collection of orders from the algorithm</param>
         /// <param name="profitLoss">Collection of time-profit values for the algorithm</param>
         /// <param name="holdings">Current holdings state for the algorithm</param>
-        /// <param name="statistics">Statistics information for the algorithm (empty if not finished)</param>
+        /// <param name="statisticsResults">Statistics information for the algorithm (empty if not finished)</param>
         /// <param name="banner">Runtime statistics banner information</param>
-        public void SendFinalResult(AlgorithmNodePacket job, Dictionary<int, Order> orders, Dictionary<DateTime, decimal> profitLoss, Dictionary<string, Holding> holdings, Dictionary<string, string> statistics, Dictionary<string, string> banner)
+        public void SendFinalResult(AlgorithmNodePacket job, Dictionary<int, Order> orders, Dictionary<DateTime, decimal> profitLoss, Dictionary<string, Holding> holdings, StatisticsResults statisticsResults, Dictionary<string, string> banner)
         {
             // uncomment these code traces to help write regression tests
             //Console.WriteLine("var statistics = new Dictionary<string, string>();");
 
             // Bleh. Nicely format statistical analysis on your algorithm results. Save to file etc.
-            foreach (var pair in statistics)
+            foreach (var pair in statisticsResults.Summary)
             {
                 Log.Trace("STATISTICS:: " + pair.Key + " " + pair.Value);
                 //Console.WriteLine(string.Format("statistics.Add(\"{0}\",\"{1}\");", pair.Key, pair.Value));
             }
 
-            FinalStatistics = statistics;
+            FinalStatistics = statisticsResults.Summary;
 
 
             var resultFileName = Path.Combine(_chartDirectory, "results.html");
             var templateHtmlFile = "../../results.html";
 
             var charts = new Dictionary<string, Chart>(Charts);
-            var result = new BacktestResult(charts, orders, profitLoss, statistics);
+            var result = new BacktestResult(charts, orders, profitLoss, statisticsResults.Summary);
             var serialized = JsonConvert.SerializeObject(result);
 
             var html = File.ReadAllText(templateHtmlFile);
