@@ -15,12 +15,10 @@
 
         <div id="plots"></div>
 
-
         <div>
             <ul class="nav nav-tabs" role="tablist">
                 <li class="active"><a href="#overview" data-toggle="tab">Overview</a></li>
                 <li><a href="#trades" data-toggle="tab">Trades</a></li>
-
             </ul>
             <div class="tab-content">
                 <div class="tab-pane active" id="overview">
@@ -60,8 +58,6 @@
 
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-    <script src="https://d14fo0winaifog.cloudfront.net/plotly-basic.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
     <script src="https://cdn.bootcss.com/echarts/2.2.7/echarts-all.js"></script>
 
@@ -114,10 +110,7 @@
 
             option2.legend.y = -30;
             option2.toolbox.y = -30;
-            option2.grid = {
-                y: 5,
-            };
-
+            option2.grid = { y: 5 };
             option2.tooltip.showContent = true;
             option2.tooltip.trigger = 'item';
             option2.tooltip.axisPointer.type = 'none';
@@ -128,8 +121,6 @@
             option1.dataZoom = null;
 
 
-
-
             var chartEl1 = $('<div style="width:100%; height: 400px;"></div>');
             var chartEl2 = $('<div style="width:100%; height: 150px;"></div>');
             var isRenderd = false;
@@ -137,7 +128,6 @@
             panel.find('.panel-body').append(chartEl2);
             $(panel).on('shown.bs.collapse', function () {
                 if (!isRenderd) {
-                    //Plotly.newPlot(chartEl.get(0), data, layout);
                     isRenderd = true;
 
                     var echart1 = echarts.init(chartEl1.get(0));
@@ -153,11 +143,6 @@
                     echart2.connect([echart1]);
                 }
             });
-
-
-
-
-
         }
 
         function getEchartBaseOptions(chart) {
@@ -259,27 +244,6 @@
                     hackEchartToFixedDisplayIssues(echart);
                 }
             });
-
-
-
-
-
-
-            //if (chart.ChartType == 0) {
-            //Plotly.newPlot(plot.get(0), data);
-            //}
-
-
-            /*if (chart.ChartType == 1) {
-                if (data.length == 2)
-                    data[0]['yaxis'] = 'y2';
-                var layout = {
-                    yaxis: { title: 'Target', domain: [0, 0.25] },
-                    yaxis2: { title: 'Control', domain: [0.3, 1] }
-                };
-                Plotly.newPlot(plot.get(0), data, layout);
-
-            }*/
         }
 
         function hackEchartToFixedDisplayIssues(echart) {
@@ -323,7 +287,6 @@
                     return 'line';
                 case 3:
                     return 'bar';
-
                 default:
                     return 'line';
             }
@@ -420,9 +383,6 @@
                     item.symbolSize = 6;
                     if (item.name == 'Sell')
                         item.symbolRotate = 180;
-                    /*item.marker = {
-                        symbol: item.name == 'Buy' ? 'triangle-up' : 'triangle-down'
-                    };*/
                 });
 
                 var echart = echarts.init(chartEl.get(0));
