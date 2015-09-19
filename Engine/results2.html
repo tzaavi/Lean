@@ -189,416 +189,321 @@
                 Flag = 4
         */
 
-        var _plots = [];
-
-
-
-        function displayPlots() {
-            var divToSplit = $('<div style="width:100%; height:100%;"></div>');
-            $('#chart-wrapper').empty().append(divToSplit);
-
-            // get number of splits
-            var splits = _plots.length - 1;
-            console.log('plits: ', splits);
-
-            if (splits > 0) {
-                var counter = 0;
-                for (var i = 0; i < splits; i++) {
-                    var div1 = $('<div></div>');
-                    var div2 = $('<div></div>');
-                    divToSplit.append(div1);
-                    divToSplit.append(div2);
-                    $(divToSplit).split({
-                        orientation: 'horizontal',
-                        limit: 20,
-                        position: (100 / (splits + 1 - i)) + '%',
-                        onDrag: resizeAllPlots
-                    });
-                    _plots[counter++].div = div1;
-                    if (i == splits - 1) {
-                        console.log('counter:', counter);
-                        _plots[counter].div = div2;
-                    }
-                    divToSplit = div2;
-                }
-            }
-
-            //only one plot
-            if (splits == 0) {
-                _plots[0].div = $('#chart-wrapper');
-            }
-
-            
-
-            // create the echarts
-            for (var i = 0; i < _plots.length; i++) {
-                var plot = _plots[i];
-
-                // get plot echart option
-                var option = getDefaultEchartOptions();
-                option.series = plot.series;
-
-                // if first add zoom tool
-                if (i == 0) {
-                    option.dataZoom = {
-                        show: true,
-                        realtime: true,
-                        y: 30,
-                        height: 25
-                    };
-                }
-
-                // create the echart
-                plot.echart = echarts.init(plot.div.get(0));
-                plot.echart.setOption(option);
-                hackEchartToFixedDisplayIssues(plot.echart);
-            }
-
-            // connect all charts
-            for (var i = 0; i < _plots.length; i++) {
-                var others = [];
-                for (var j = 0; j < _plots.length; j++) {
-                    if (i != j) {
-                        others.push(_plots[j].echart);
-                    }
-                }
-                if (others.length > 0) {
-                    _plots[i].echart.connect(others);
-                }
-            }
-
-
-        }
-
-        function clearOldPlots() {
-            $('#chart-wrapper').empty();
-
-            // dispose old ecahrts
-            for (var i = 0; i < _plots.length; i++) {
-            }
-        }
-
-        function resizeAllPlots() {
-            for (var i = 0; i < _plots.length; i++) {
-                _plots[i].echart.resize();
-            }
-        }
-
-        function getDefaultEchartOptions() {
-            return {
-                tooltip: {
-                    trigger: 'axis',
-                    showContent: false,
-                    axisPointer: {
-                        type: 'cross'
-                    },
-                    transitionDuration: 0,
-                    showDelay: 0,
-                    formatter: null
-                },
-                toolbox: {
-                    show: true,
-                    feature: {
-                        mark: {
-                            show: true,
-                            title: {
-                                mark: 'Mark',
-                                markUndo: 'Undo',
-                                markClear: 'Clear'
-                            }
-                        },
-                        //magicType: { show: true, type: ['line', 'bar'] },
-                        restore: {
-                            show: true,
-                            title: 'Reset'
-                        },
-                        dataZoom: {
-                            show: true,
-                            title: {
-                                dataZoom: 'Zoom',
-                                dataZoomReset: 'Reset Zoom'
-                            }
-                        }
-                    }
-                },
-                xAxis: [
-                    {
-                        type: 'time',
-                        splitNumber: 10
-                    }
-                ],
-                yAxis: [
-                    {
-                        type: 'value',
-                        scale: true
-                    }
-                ]
-            };
-        }
-
-
+        var app = {};
 
 
         //----------------------------------------------------------------
         // Chart Builder
         //----------------------------------------------------------------
-        var chartBuilder = {
-            elBody: '#custom-chart-modal .modal-body',
-            elPanels: '#custom-chart-modal .modal-body .panels-wrapper',
-            availableSeries: [],
+        (function(app) {
+            app.chartBuilder = {
+                elBody: '#custom-chart-modal .modal-body',
+                elPanels: '#custom-chart-modal .modal-body .panels-wrapper',
+                availableSeries: [],
 
-            init: function(series) {
-                this.availableSeries = series;
-                var self = this;
-                // add panel click
-                $(this.elBody).find('.add-panel').click(function() {
-                    self.addEmptyPanel();
-                });
-            },
-
-            addPanelWithSeriesList: function(series) {
-                var panel = this.addEmptyPanel();
-                var self = this;
-                $(series).each(function(i, item) {
-                    self.addSingleSeriesToPanel(panel, item);
-                });
-            },
-
-            addEmptyPanel: function () {
-                var self = this;
-                var panelEl = $('<div class="panel panel-default"><div class="panel-heading">Plot Panel</div><div class="panel-body"></div></div>');
-                var select = $('<select class="form-control"><option>Add Series</option></select>');
-                var seriesWrapper = $('<div class="series-wrapper"></div>');
-                $(panelEl).find('.panel-body').append(seriesWrapper).append(select);
-                $(this.elPanels).append(panelEl);
-
-                // add series on select
-                select.change(function () {
-                    var selected = $(this).find('option:selected');
-                    var series = selected.data('series');
-                    if (series) {
-                        self.addSingleSeriesToPanel(panelEl, series);
-                    }
-                });
-
-                // add all series options
-                $(this.availableSeries).each(function (i, item) {
-                    var op = $('<option></option>');
-                    op.text(item.name);
-                    op.data('series', item);
-                    $(select).append(op);
-                });
-
-                return panelEl;
-            },
-
-            addSingleSeriesToPanel: function(panel, series) {
-                // add new series element to panel
-                var g = $('<div class="btn-group seriers"></div>');
-                var label = $('<button type="button" class="btn btn-default">' + series.name + '</button>');
-                var remove = $('<button type="button" class="btn btn-default">X</button>');
-                g.append(label).append(remove);
-                panel.find('.series-wrapper').append(g);
-
-                // attached series to item for later user
-                g.data('series', series);
-
-                // add remove handler
-                remove.click(function () {
-                    $(this).parent().remove();
-                });
-            },
-
-            getData: function() {
-                var data = [];
-                $(this.elPanels).find('.panel').each(function () {
-                    var panel = { series: [] };
-                    $(this).find('.series-wrapper .seriers').each(function() {
-                        panel.series.push($(this).data('series'));
+                init: function(series) {
+                    this.availableSeries = series;
+                    var self = this;
+                    // add panel click
+                    $(this.elBody).find('.add-panel').click(function() {
+                        self.addEmptyPanel();
                     });
-                    data.push(panel);
-                });
-                return data;
-            }
-        }
+                },
 
+                addPanelWithSeriesList: function(series) {
+                    var panel = this.addEmptyPanel();
+                    var self = this;
+                    $(series).each(function(i, item) {
+                        self.addSingleSeriesToPanel(panel, item);
+                    });
+                },
 
+                addEmptyPanel: function() {
+                    var self = this;
+                    var panelEl = $('<div class="panel panel-default"><div class="panel-heading">Plot Panel</div><div class="panel-body"></div></div>');
+                    var select = $('<select class="form-control"><option>Add Series</option></select>');
+                    var seriesWrapper = $('<div class="series-wrapper"></div>');
+                    $(panelEl).find('.panel-body').append(seriesWrapper).append(select);
+                    $(this.elPanels).append(panelEl);
 
-        function createCollapeContainer(title, show) {
+                    // add series on select
+                    select.change(function() {
+                        var selected = $(this).find('option:selected');
+                        var series = selected.data('series');
+                        if (series) {
+                            self.addSingleSeriesToPanel(panelEl, series);
+                        }
+                    });
 
-            var panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a href="#"></a></h4></div><div class="panel-collapse collapse ' + show + '"><div class="panel-body"></div></div></div>');
-            var header = panel.find('.panel-title a');
-            var collapse = panel.find('.collapse');
-            header.text(title);
+                    // add all series options
+                    $(this.availableSeries).each(function(i, item) {
+                        var op = $('<option></option>');
+                        op.text(item.name);
+                        op.data('series', item);
+                        $(select).append(op);
+                    });
 
-            header.click(function () {
-                collapse.collapse('toggle');
-                return false;
-            });
+                    return panelEl;
+                },
 
-            $('#plots').append(panel);
-            return panel;
-        }
+                addSingleSeriesToPanel: function(panel, series) {
+                    // add new series element to panel
+                    var g = $('<div class="btn-group seriers"></div>');
+                    var label = $('<button type="button" class="btn btn-default">' + series.name + '</button>');
+                    var remove = $('<button type="button" class="btn btn-default">X</button>');
+                    g.append(label).append(remove);
+                    panel.find('.series-wrapper').append(g);
 
-        function displayStrategyEquity(chart) {
-            var option1 = getEchartBaseOptions(chart);
-            var option2 = getEchartBaseOptions(chart);
+                    // attached series to item for later user
+                    g.data('series', series);
 
-            for (var i = 0; i < option1.series.length; i++) {
-                if (option1.series[i].name == 'Daily Performance') {
-                    option1.series[i].data = [];
+                    // add remove handler
+                    remove.click(function() {
+                        $(this).parent().remove();
+                    });
+                },
 
+                getData: function() {
+                    var data = [];
+                    $(this.elPanels).find('.panel').each(function() {
+                        var panel = { series: [] };
+                        $(this).find('.series-wrapper .seriers').each(function() {
+                            panel.series.push($(this).data('series'));
+                        });
+                        data.push(panel);
+                    });
+                    return data;
+                },
+
+                setStrategyEquityChart: function() {
+                    for (var i = 0; i < this.availableSeries.length; i++) {
+                        if (this.availableSeries[i].name == 'Equity') {
+                            this.addPanelWithSeriesList([this.availableSeries[i]]);
+                        }
+                        if (this.availableSeries[i].name == 'Daily Performance') {
+                            this.addPanelWithSeriesList([this.availableSeries[i]]);
+                        }
+                    };
                 }
             }
+        })(app);
 
-            for (var i = 0; i < option2.series.length; i++) {
-                if (option2.series[i].name == 'Equity')
-                    option2.series[i].data = [];
-            }
 
-            option2.tooltip.showContent = true;
-            option2.tooltip.trigger = 'item';
-            option2.tooltip.axisPointer.type = 'none';
-            option2.tooltip.showDelay = 20;
-            option2.tooltip.transitionDuration = 0.4;
-            option2.tooltip.formatter = '{c}';
+        //----------------------------------------------------------------
+        // Helper methods
+        //----------------------------------------------------------------
+        (function (app) {
+            app.helpers = {
+                getSeriesFromQuantConnectCahrts: function() {
+                    return $.map(_data.Charts, function(chart) {
+                        return $.map(chart.Series, function(s) {
+                            var track = {
+                                name: s.Name,
+                                type: getSeriesType(s.SeriesType),
+                                symbol: 'none'
+                            };
+                            track.data = [];
+                            $.each(s.Values, function(k, item) {
+                                var time;
+                                if (isNaN(item.x)) {
+                                    time = moment(item.x).toDate();
+                                } else {
+                                    time = new Date(item.x * 1000);
+                                }
+                                track.data.push([time, item.y]);
+                            });
+                            return track;
+                        });
+                    });
+                },
 
-            option1.dataZoom = {
-                show: true,
-                realtime: true,
-                y: 30,
-                height: 25
+                getSeriesFromQuantConnectOrders: function() {
+                    var ordersSeries = {};
+                    $.each(_data['Orders'], function(k, v) {
+                        var key = v.Symbol.Value + '_' + getOrderDirection(v.Direction);
+                        var series = ordersSeries[key];
+                        if (!series) {
+                            series = {
+                                name: key,
+                                type: 'scatter',
+                                data: []
+                            }
+                            series.symbol = 'triangle';
+                            series.symbolSize = 6;
+                            if (v.Direction == 1)
+                                series.symbolRotate = 180;
+                            ordersSeries[key] = series;
+                        }
+
+                        var time = v.Time;
+                        if (time.indexOf('Z') == -1)
+                            time += 'Z';
+                        series.data.push([
+                            moment(time).toDate(),
+                            v.Price
+                        ]);
+                    });
+                    var series = [];
+                    $.each(ordersSeries, function(k, v) {
+                        series.push(v);
+                    });
+                    return series;
+                },
+
+                getDefaultEchartOptions: function() {
+                    return {
+                        tooltip: {
+                            trigger: 'axis',
+                            showContent: false,
+                            axisPointer: {
+                                type: 'cross'
+                            },
+                            transitionDuration: 0,
+                            showDelay: 0,
+                            formatter: null
+                        },
+                        toolbox: {
+                            show: true,
+                            feature: {
+                                mark: {
+                                    show: true,
+                                    title: {
+                                        mark: 'Mark',
+                                        markUndo: 'Undo',
+                                        markClear: 'Clear'
+                                    }
+                                },
+                                //magicType: { show: true, type: ['line', 'bar'] },
+                                restore: {
+                                    show: true,
+                                    title: 'Reset'
+                                },
+                                dataZoom: {
+                                    show: true,
+                                    title: {
+                                        dataZoom: 'Zoom',
+                                        dataZoomReset: 'Reset Zoom'
+                                    }
+                                }
+                            }
+                        },
+                        xAxis: [
+                            {
+                                type: 'time',
+                                splitNumber: 10
+                            }
+                        ],
+                        yAxis: [
+                            {
+                                type: 'value',
+                                scale: true
+                            }
+                        ]
+                    };
+                }
             };
+        })(app);
 
 
-            var chartEl1 = $('<div></div>');
-            var chartEl2 = $('<div></div>');
-            $('#chart-wrapper').append(chartEl1);
-            $('#chart-wrapper').append(chartEl2);
+        //----------------------------------------------------------------
+        // Chart Render
+        //----------------------------------------------------------------
+        (function(app) {
+            app.chartRender = {
+                plots: [],
 
-            var echart1;
-            var echart2;
+                render: function() {
+                    var self = this;
 
-            $('#chart-wrapper').split({
-                orientation: 'horizontal',
-                limit: 20,
-                position: '50%',
-                onDrag: function () {
-                    echart1.resize();
-                    echart2.resize();
-                }
-            });
+                    // get all plots from chart builder
+                    this.plots = app.chartBuilder.getData();
+                    console.log('plots: ', this.plots);
 
-            echart1 = echarts.init(chartEl1.get(0));
-            echart1.setOption(option1);
-            hackEchartToFixedDisplayIssues(echart1);
+                    // create an inner div to hold all plots
+                    var divToSplit = $('<div style="width:100%; height:100%;"></div>');
+                    $('#chart-wrapper').empty().append(divToSplit);
 
-            echart2 = echarts.init(chartEl2.get(0));
-            echart2.setOption(option2);
+                    // get number of splits
+                    var splits = this.plots.length - 1;
+                    console.log('plits: ', splits);
 
-            echart1.connect([echart2]);
-            echart2.connect([echart1]);
-
-            
-       
-        }
-
-        function getEchartBaseOptions(chart) {
-            var series = $.map(chart.Series, function (s) {
-                var track = {
-                    name: s.Name,
-                    type: getSeriesType(s.SeriesType),
-                    symbol: 'none'
-                };
-                track.data = [];
-                $.each(s.Values, function (k, item) {
-                    var time;
-                    if (isNaN(item.x)) {
-                        time = moment(item.x).toDate();
-                    } else {
-                        time = new Date(item.x * 1000);
-                    }
-                    track.data.push([time, item.y]);
-                });
-                return track;
-            });
-
-            var legendData = $.map(series, function (x) {
-                return x.name;
-            });
-
-            return {
-                tooltip: {
-                    trigger: 'axis',
-                    showContent: false,
-                    axisPointer: {
-                        type: 'cross'
-                    },
-                    transitionDuration: 0,
-                    showDelay: 0,
-                    formatter: null
-                },
-                legend: {
-                    data: legendData
-                },
-                toolbox: {
-                    show: true,
-                    feature: {
-                        mark: {
-                            show: true,
-                            title: {
-                                mark: 'Mark',
-                                markUndo: 'Undo',
-                                markClear: 'Clear'
+                    if (splits > 0) {
+                        var counter = 0;
+                        for (var i = 0; i < splits; i++) {
+                            var div1 = $('<div></div>');
+                            var div2 = $('<div></div>');
+                            divToSplit.append(div1);
+                            divToSplit.append(div2);
+                            $(divToSplit).split({
+                                orientation: 'horizontal',
+                                limit: 20,
+                                position: (100 / (splits + 1 - i)) + '%',
+                                onDrag: function() {
+                                    self.resizeAllPlots();
+                                }
+                            });
+                            this.plots[counter++].div = div1;
+                            if (i == splits - 1) {
+                                console.log('counter:', counter);
+                                this.plots[counter].div = div2;
                             }
-                        },
-                        //magicType: { show: true, type: ['line', 'bar'] },
-                        restore: {
-                            show: true,
-                            title: 'Reset'
-                        },
-                        dataZoom: {
-                            show: true,
-                            title: {
-                                dataZoom: 'Zoom',
-                                dataZoomReset: 'Reset Zoom'
-                            }
+                            divToSplit = div2;
                         }
                     }
+
+                    //only one plot no need to split 
+                    if (splits == 0) {
+                        this.plots[0].div = divToSplit;
+                    }
+
+                    // create the echarts
+                    for (var i = 0; i < this.plots.length; i++) {
+                        var plot = this.plots[i];
+
+                        // get plot echart option
+                        var option = app.helpers.getDefaultEchartOptions();
+                        option.series = plot.series;
+
+                        // if first add zoom tool
+                        if (i == 0) {
+                            option.dataZoom = {
+                                show: true,
+                                realtime: true,
+                                y: 30,
+                                height: 25
+                            };
+                        }
+
+                        // create the echart
+                        plot.echart = echarts.init(plot.div.get(0));
+                        plot.echart.setOption(option);
+                        hackEchartToFixedDisplayIssues(plot.echart);
+                    }
+
+                    // connect all charts
+                    for (var i = 0; i < this.plots.length; i++) {
+                        var others = [];
+                        for (var j = 0; j < this.plots.length; j++) {
+                            if (i != j) {
+                                others.push(this.plots[j].echart);
+                            }
+                        }
+                        if (others.length > 0) {
+                            this.plots[i].echart.connect(others);
+                        }
+                    }
+
                 },
-                xAxis: [
-                    {
-                        type: 'time',
-                        splitNumber: 10
+
+                resizeAllPlots: function() {
+                    for (var i = 0; i < this.plots.length; i++) {
+                        this.plots[i].echart.resize();
                     }
-                ],
-                yAxis: [
-                    {
-                        type: 'value',
-                        scale: true
-                    }
-                ],
-                series: series
-            };
-        }
-
-        function displyChart(chart) {
-            var panel = createCollapeContainer(chart.Name);
-            var chartEl = $('<div style="width:100%; height: 500px;"></div>');
-            panel.find('.panel-body').append(chartEl);
-            var isRenderd = false;
-            $(panel).on('shown.bs.collapse', function () {
-                if (!isRenderd) {
-                    isRenderd = true;
-
-                    var echart = echarts.init(chartEl.get(0));
-                    echart.setOption(getEchartBaseOptions(chart));
-                    $(window).resize(echart.resize);
-
-                    hackEchartToFixedDisplayIssues(echart);
                 }
-            });
-        }
+            };
+        })(app);
+
+
 
         function hackEchartToFixedDisplayIssues(echart) {
             // hack this function to modify echart to display date correctly in cross mode
@@ -814,98 +719,36 @@
         // Init
         //----------------------------------------------------------------
         $(function () {
+
             // set main split
             $('#main').split({
                 orientation: 'horizontal',
                 limit: 20,
                 position: '80%',
-                onDrag: resizeAllPlots
+                onDrag: function() {
+                    app.chartRender.resizeAllPlots();
+                }
             });
 
             // get all series
-            var series = $.map(_data.Charts, function (chart) {
-                return  $.map(chart.Series, function (s) {
-                    var track = {
-                        name: s.Name,
-                        type: getSeriesType(s.SeriesType),
-                        symbol: 'none'
-                    };
-                    track.data = [];
-                    $.each(s.Values, function (k, item) {
-                        var time;
-                        if (isNaN(item.x)) {
-                            time = moment(item.x).toDate();
-                        } else {
-                            time = new Date(item.x * 1000);
-                        }
-                        track.data.push([time, item.y]);
-                    });
-                    return track;
-                });
-            });
+            var series = app.helpers.getSeriesFromQuantConnectCahrts();
 
             // add trades searies
-            var orders = _data['Orders'];
-            var ordersSeries = {};
-            $.each(orders, function (k, v) {
-                var key = v.Symbol.Value + '_' + getOrderDirection(v.Direction);
-                var series = ordersSeries[key];
-                if (!series) {
-                    series = {
-                        name: key,
-                        type: 'line',
-                        data: []
-                    }
-                    ordersSeries[key] = series;
-                }
-
-                var time = v.Time;
-                if (time.indexOf('Z') == -1)
-                    time += 'Z';
-                series.data.push([
-                    moment(time).toDate(),
-                    v.Price
-                ]);
-            });
-            $.each(ordersSeries, function (k, v) {
-                series.push(v);
-            });
-            console.log('orders', ordersSeries);
-
+            series = series.concat(app.helpers.getSeriesFromQuantConnectOrders());
+            
             // init chart builder
-            chartBuilder.init(series);
-
+            app.chartBuilder.init(series);
 
             // init chart builder with equity strategy
-            for (var i = 0; i < series.length; i++) {
-                if (series[i].name == 'Equity') {
-                    chartBuilder.addPanelWithSeriesList([series[i]]);
-                }
-                if (series[i].name == 'Daily Performance') {
-                    chartBuilder.addPanelWithSeriesList([series[i]]);
-                }
-            };
+            app.chartBuilder.setStrategyEquityChart();
 
-           
             // display chart with cahrt builder data
-            $(chartBuilder.getData()).each(function () {
-                console.log('panel: ',this);
-                _plots.push({ series: this.series });
-            });
-
+            app.chartRender.render();
 
             // on modal save click
             $('#custom-chart-modal .btn-primary').click(function () {
-                _plots = [];
-                $(chartBuilder.getData()).each(function () {
-                    console.log('panel: ', this);
-                    _plots.push({ series: this.series });
-                });
-                displayPlots();
+                app.chartRender.render();
             });
-
-
-            displayPlots();
 
 
             //buildStatistics();
@@ -918,7 +761,7 @@
 
         //------------------------------------------------------------------
         // Splitter
-        // http://methvin.com/splitter/
+        // https://github.com/jcubic/jquery.splitter
         //------------------------------------------------------------------
         (function ($, undefined) {
             var count = 0;
