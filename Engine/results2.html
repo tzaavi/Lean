@@ -117,7 +117,7 @@
 
     <div id="main">
         <div id="chart-wrapper">
-
+          
         </div>
 
         <div id="summary">
@@ -143,34 +143,13 @@
 
                 </div>
 
-                <div class="panel panel-default">
-                    <div class="panel-heading">Plot Panel</div>
-                    <div class="panel-body">
-                        <div class="btn-group seriers">
-                            <button type="button" class="btn btn-default">EMA 15</button>
-                            <button type="button" class="btn btn-default">X</button>
-                        </div>
-                        <div class="btn-group seriers">
-                            <button type="button" class="btn btn-default">EMA 15</button>
-                            <button type="button" class="btn btn-default">X</button>
-                        </div>
-
-                        <select class="form-control">
-                            <option>Add Series</option>
-                            <option>Ketchup</option>
-                            <option>Relish</option>
-                        </select>
-
-                    </div>
-                </div>
-
-                <button type="button" class="btn btn-default">Add Panel</button>
+                <button type="button" class="btn btn-default add-panel">Add Panel</button>
 
 
             </div>        
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
             </div>
         </div>
     </div>
@@ -215,38 +194,41 @@
 
 
         function displayPlots() {
-            
+            var divToSplit = $('<div style="width:100%; height:100%;"></div>');
+            $('#chart-wrapper').empty().append(divToSplit);
+
             // get number of splits
             var splits = _plots.length - 1;
             console.log('plits: ', splits);
 
-            var counter = 0;
-            var divToSplit = $('#chart-wrapper');
-            for (var i = 0; i < splits; i++) {
-                var div1 = $('<div></div>');
-                var div2 = $('<div></div>');
-                divToSplit.append(div1);
-                divToSplit.append(div2);
-                $(divToSplit).split({
-                    orientation: 'horizontal',
-                    limit: 20,
-                    position: (100 / (splits + 1 - i)) + '%',
-                    onDrag: resizeAllPlots
-                });
-                _plots[counter++].div = div1;
-                if (i == splits - 1) {
-                    console.log('counter:',counter);
-                    _plots[counter].div = div2;
+            if (splits > 0) {
+                var counter = 0;
+                for (var i = 0; i < splits; i++) {
+                    var div1 = $('<div></div>');
+                    var div2 = $('<div></div>');
+                    divToSplit.append(div1);
+                    divToSplit.append(div2);
+                    $(divToSplit).split({
+                        orientation: 'horizontal',
+                        limit: 20,
+                        position: (100 / (splits + 1 - i)) + '%',
+                        onDrag: resizeAllPlots
+                    });
+                    _plots[counter++].div = div1;
+                    if (i == splits - 1) {
+                        console.log('counter:', counter);
+                        _plots[counter].div = div2;
+                    }
+                    divToSplit = div2;
                 }
-                divToSplit = div2;
             }
 
-            // first add all divs to dom
-            /*for (var i = 0; i < _plots.length; i++) {
-                var plot = _plots[i];
-                plot.div = $('<div></div>');
-                $('#chart-wrapper').append(plot.div);
-            }*/
+            //only one plot
+            if (splits == 0) {
+                _plots[0].div = $('#chart-wrapper');
+            }
+
+            
 
             // create the echarts
             for (var i = 0; i < _plots.length; i++) {
@@ -363,26 +345,80 @@
         var chartBuilder = {
             elBody: '#custom-chart-modal .modal-body',
             elPanels: '#custom-chart-modal .modal-body .panels-wrapper',
-            panels: [],
             availableSeries: [],
 
-            setAvailableSeries: function(series) {
+            init: function(series) {
                 this.availableSeries = series;
+                var self = this;
+                // add panel click
+                $(this.elBody).find('.add-panel').click(function() {
+                    self.addEmptyPanel();
+                });
             },
 
-            clear: function() {
-                this.panels = [];
+            addPanelWithSeriesList: function(series) {
+                var panel = this.addEmptyPanel();
+                var self = this;
+                $(series).each(function(i, item) {
+                    self.addSingleSeriesToPanel(panel, item);
+                });
             },
 
-            addPanel: function(data) {
-                
-            },
-
-            addEmptyPanel: function() {
-                var html = $('<div class="panel panel-default"><div class="panel-heading">Plot Panel</div><div class="panel-body"></div></div>');
+            addEmptyPanel: function () {
+                var self = this;
+                var panelEl = $('<div class="panel panel-default"><div class="panel-heading">Plot Panel</div><div class="panel-body"></div></div>');
                 var select = $('<select class="form-control"><option>Add Series</option></select>');
-                $(html).find('.panel-body').append(select);
-                $(this.elPanels).append(html);
+                var seriesWrapper = $('<div class="series-wrapper"></div>');
+                $(panelEl).find('.panel-body').append(seriesWrapper).append(select);
+                $(this.elPanels).append(panelEl);
+
+                // add series on select
+                select.change(function () {
+                    var selected = $(this).find('option:selected');
+                    var series = selected.data('series');
+                    if (series) {
+                        self.addSingleSeriesToPanel(panelEl, series);
+                    }
+                });
+
+                // add all series options
+                $(this.availableSeries).each(function (i, item) {
+                    var op = $('<option></option>');
+                    op.text(item.name);
+                    op.data('series', item);
+                    $(select).append(op);
+                });
+
+                return panelEl;
+            },
+
+            addSingleSeriesToPanel: function(panel, series) {
+                // add new series element to panel
+                var g = $('<div class="btn-group seriers"></div>');
+                var label = $('<button type="button" class="btn btn-default">' + series.name + '</button>');
+                var remove = $('<button type="button" class="btn btn-default">X</button>');
+                g.append(label).append(remove);
+                panel.find('.series-wrapper').append(g);
+
+                // attached series to item for later user
+                g.data('series', series);
+
+                // add remove handler
+                remove.click(function () {
+                    $(this).parent().remove();
+                });
+            },
+
+            getData: function() {
+                var data = [];
+                $(this.elPanels).find('.panel').each(function () {
+                    var panel = { series: [] };
+                    $(this).find('.series-wrapper .seriers').each(function() {
+                        panel.series.push($(this).data('series'));
+                    });
+                    data.push(panel);
+                });
+                return data;
             }
         }
 
@@ -773,16 +809,18 @@
             }
         }
 
+
+        //----------------------------------------------------------------
+        // Init
+        //----------------------------------------------------------------
         $(function () {
+            // set main split
             $('#main').split({
                 orientation: 'horizontal',
                 limit: 20,
                 position: '80%',
                 onDrag: resizeAllPlots
             });
-
-
-            //displayStrategyEquity(_data.Charts['Strategy Equity']);
 
             // get all series
             var series = $.map(_data.Charts, function (chart) {
@@ -806,28 +844,68 @@
                 });
             });
 
-            console.log('series:', series);
+            // add trades searies
+            var orders = _data['Orders'];
+            var ordersSeries = {};
+            $.each(orders, function (k, v) {
+                var key = v.Symbol.Value + '_' + getOrderDirection(v.Direction);
+                var series = ordersSeries[key];
+                if (!series) {
+                    series = {
+                        name: key,
+                        type: 'line',
+                        data: []
+                    }
+                    ordersSeries[key] = series;
+                }
+
+                var time = v.Time;
+                if (time.indexOf('Z') == -1)
+                    time += 'Z';
+                series.data.push([
+                    moment(time).toDate(),
+                    v.Price
+                ]);
+            });
+            $.each(ordersSeries, function (k, v) {
+                series.push(v);
+            });
+            console.log('orders', ordersSeries);
+
+            // init chart builder
+            chartBuilder.init(series);
 
 
-            // temp create equity strategy
+            // init chart builder with equity strategy
             for (var i = 0; i < series.length; i++) {
                 if (series[i].name == 'Equity') {
-                    _plots.push({ series: [series[i]] });
+                    chartBuilder.addPanelWithSeriesList([series[i]]);
                 }
                 if (series[i].name == 'Daily Performance') {
-                    _plots.push({ series: [series[i]] });
-                }
-                if (series[i].name == 'EMA30(NZDUSD_hr)') {
-                    _plots.push({ series: [series[i]] });
-                }
-                if (series[i].name == 'EMA15(EURUSD_hr)') {
-                    _plots.push({ series: [series[i]] });
+                    chartBuilder.addPanelWithSeriesList([series[i]]);
                 }
             };
 
-            displayPlots();
+           
+            // display chart with cahrt builder data
+            $(chartBuilder.getData()).each(function () {
+                console.log('panel: ',this);
+                _plots.push({ series: this.series });
+            });
 
-            chartBuilder.addEmptyPanel();
+
+            // on modal save click
+            $('#custom-chart-modal .btn-primary').click(function () {
+                _plots = [];
+                $(chartBuilder.getData()).each(function () {
+                    console.log('panel: ', this);
+                    _plots.push({ series: this.series });
+                });
+                displayPlots();
+            });
+
+
+            displayPlots();
 
 
             //buildStatistics();
