@@ -6,49 +6,201 @@
     <title></title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
+    <style>
+        #page-wrapper {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            top: 0;
+            background-color: #f1f3f6;
+        }
+
+        #menu {
+            position: absolute;
+            left: 5px;
+            right: 5px;
+            top: 5px;
+            height: 30px;
+        }
+
+        #main {
+            position: absolute;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            top: 40px;
+            border: 1px #aaa solid;
+            background-color: #fff;
+        }
+
+        #summary {
+            background-color: #fcfcfc;
+        } 
+        
+        .modal .btn-group.seriers {
+            margin-bottom: 10px;
+        }
+
+        .modal .panel select {
+            width: initial
+        }
+    </style>
+
+    <style>
+        .splitter_panel {
+            position: relative;
+        }
+
+        .splitter_panel .vsplitter {
+            background-color: grey;
+            cursor: col-resize;
+            z-index: 900;
+            width: 7px;
+        }
+
+        .splitter_panel .hsplitter {
+            background-color: #f1f3f6;
+            border-top: 1px #aaa solid;
+            border-bottom: 1px #aaa solid;
+            cursor: ns-resize;
+            z-index: 800;
+            height: 6px;
+        }
+
+        .splitter_panel .vsplitter.splitter-invisible,
+        .splitter_panel .hsplitter.splitter-invisible {
+            background: none;
+        }
+
+        .splitter_panel .vsplitter, .splitter_panel .left_panel, .splitter_panel .right_panel,
+        .splitter_panel .hsplitter, .splitter_panel .top_panel, .splitter_panel .bottom_panel {
+            position: absolute;
+            overflow: auto;
+        }
+
+        .splitter_panel .vsplitter, .splitter_panel .left_panel, .splitter_panel .right_panel {
+            height: 100%;
+        }
+
+        .splitter_panel .hsplitter, .splitter_panel .top_panel, .splitter_panel .bottom_panel {
+            width: 100%;
+        }
+
+        .splitter_panel .top_panel, .splitter_panel .left_panel, .splitter_panel .vsplitter {
+            top: 0;
+        }
+
+        .splitter_panel .top_panel, .splitter_panel .bottom_panel, .splitter_panel .left_panel, .splitter_panel .hsplitter {
+            left: 0;
+        }
+
+        .splitter_panel .bottom_panel {
+            bottom: 0;
+        }
+
+        .splitter_panel .right_panel {
+            right: 0;
+        }
+
+        .splitterMask {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="container">
 
-        <h3>Results</h3>
-
-        <div id="plots"></div>
-
-        <div>
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="active"><a href="#overview" data-toggle="tab">Overview</a></li>
-                <li><a href="#trades" data-toggle="tab">Trades</a></li>
-            </ul>
-            <div class="tab-content">
-                <div class="tab-pane active" id="overview">
-                    <table id="statistics" class="table table-condensed"></table>
-                </div>
-
-                <div class="tab-pane" id="trades">
-                    <table id="trades-table" class="table table-condensed">
-                        <thead>
-                            <tr>
-                                <th>DateTime</th>
-                                <th>Symbole</th>
-                                <th>Price</th>
-                                <th>Type</th>
-                                <th>Qunatity</th>
-                                <th>Operation</th>
-                                <th>Status</th>
-                                <th>Tag</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
+<div id="page-wrapper">
+    <div id="menu">
+        <a class="btn btn-default" id="btn-strategy-equity">Strategy Equity</a>
+        <a class="btn btn-default" data-toggle="modal" data-target="#custom-chart-modal">Custom Chart</a>
     </div>
 
+    <div id="main">
+        <div id="chart-wrapper">
+          
+        </div>
 
-    <script>
+        <div id="summary">
+            <div>
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#summary-tab" aria-controls="home" role="tab" data-toggle="tab">Summary</a></li>
+                    <li role="presentation"><a href="#trades-tab" aria-controls="profile" role="tab" data-toggle="tab">Trades</a></li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="summary-tab">
+                        <table id="statistics" class="table table-condensed"></table>
+                    </div>
+                    <div role="tabpanel" class="tab-pane" id="trades-tab">
+                        <table id="trades-table" class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>DateTime</th>
+                                    <th>Symbole</th>
+                                    <th>Price</th>
+                                    <th>Type</th>
+                                    <th>Qunatity</th>
+                                    <th>Operation</th>
+                                    <th>Status</th>
+                                    <th>Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+    </div>
+
+</div>
+
+
+<!-- Custom chart modal -->
+<div class="modal fade" id="custom-chart-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+            </div>
+            <div class="modal-body">
+
+                <div class="panels-wrapper">
+
+                </div>
+
+                <button type="button" class="btn btn-default add-panel">Add Panel</button>
+
+
+            </div>        
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<script>
         var _data = [[JSON_DATA]];
     </script>
 
@@ -62,411 +214,807 @@
     <script src="https://cdn.bootcss.com/echarts/2.2.7/echarts-all.js"></script>
 
     <script>
-        /*
-            ChartType:
-                Overlay = 0
-                Stacked = 1
+        var app = {};
 
-            SeriesType:
-                Line = 0
-                Scatter = 1
-                Chandle = 2
-                Bar = 3
-                Flag = 4
-        */
 
-        function createCollapeContainer(title, show) {
+        //----------------------------------------------------------------
+        // Chart Builder
+        //----------------------------------------------------------------
+        (function(app) {
+            app.chartBuilder = {
+                elBody: '#custom-chart-modal .modal-body',
+                elPanels: '#custom-chart-modal .modal-body .panels-wrapper',
+                availableSeries: [],
 
-            var panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a href="#"></a></h4></div><div class="panel-collapse collapse ' + show + '"><div class="panel-body"></div></div></div>');
-            var header = panel.find('.panel-title a');
-            var collapse = panel.find('.collapse');
-            header.text(title);
+                init: function(series) {
+                    this.availableSeries = series;
+                    var self = this;
+                    // add panel click
+                    $(this.elBody).find('.add-panel').click(function() {
+                        self.addEmptyPanel();
+                    });
+                },
 
-            header.click(function () {
-                collapse.collapse('toggle');
-                return false;
-            });
+                addPanelWithSeriesList: function(series) {
+                    var panel = this.addEmptyPanel();
+                    var self = this;
+                    $(series).each(function(i, item) {
+                        self.addSingleSeriesToPanel(panel, item);
+                    });
+                },
 
-            $('#plots').append(panel);
-            return panel;
-        }
+                addEmptyPanel: function() {
+                    var self = this;
+                    var panelEl = $('<div class="panel panel-default"><div class="panel-heading clearfix">Plot Panel <a class="btn btn-default btn-xs pull-right remove-panel">x</a></div><div class="panel-body"></div></div>');
+                    var select = $('<select class="form-control"><option>Add Series</option></select>');
+                    var seriesWrapper = $('<div class="series-wrapper"></div>');
+                    $(panelEl).find('.panel-body').append(seriesWrapper).append(select);
+                    $(this.elPanels).append(panelEl);
 
-        function displayStrategyEquity(chart) {
-            var panel = createCollapeContainer('Strategy Equity');
-            var option1 = getEchartBaseOptions(chart);
-            var option2 = getEchartBaseOptions(chart);
+                    // add series on select
+                    select.change(function() {
+                        var selected = $(this).find('option:selected');
+                        var series = selected.data('series');
+                        if (series) {
+                            self.addSingleSeriesToPanel(panelEl, series);
+                        }
+                    });
 
-            for (var i = 0; i < option1.series.length; i++) {
-                if (option1.series[i].name == 'Daily Performance') {
-                    option1.series[i].data = [];
+                    // add all series options
+                    $(this.availableSeries).each(function(i, item) {
+                        var op = $('<option></option>');
+                        op.text(item.name);
+                        op.data('series', item);
+                        $(select).append(op);
+                    });
 
+                    // remove panel click
+                    panelEl.find('.remove-panel').click(function() {
+                        panelEl.remove();
+                    });
+
+                    return panelEl;
+                },
+
+                addSingleSeriesToPanel: function(panel, series) {
+                    // add new series element to panel
+                    var g = $('<div class="btn-group seriers"></div>');
+                    var label = $('<button type="button" class="btn btn-default">' + series.name + '</button>');
+                    var remove = $('<button type="button" class="btn btn-default">X</button>');
+                    g.append(label).append(remove);
+                    panel.find('.series-wrapper').append(g);
+
+                    // attached series to item for later user
+                    g.data('series', series);
+
+                    // add remove handler
+                    remove.click(function() {
+                        $(this).parent().remove();
+                    });
+                },
+
+                getData: function() {
+                    var data = [];
+                    $(this.elPanels).find('.panel').each(function() {
+                        var panel = { series: [] };
+                        $(this).find('.series-wrapper .seriers').each(function() {
+                            panel.series.push($(this).data('series'));
+                        });
+                        data.push(panel);
+                    });
+                    return data;
+                },
+
+                setStrategyEquityChart: function() {
+                    for (var i = 0; i < this.availableSeries.length; i++) {
+                        if (this.availableSeries[i].name == 'Equity') {
+                            this.addPanelWithSeriesList([this.availableSeries[i]]);
+                        }
+                        if (this.availableSeries[i].name == 'Daily Performance') {
+                            this.addPanelWithSeriesList([this.availableSeries[i]]);
+                        }
+                    };
                 }
             }
-
-            for (var i = 0; i < option2.series.length; i++) {
-                if (option2.series[i].name == 'Equity')
-                    option2.series[i].data = [];
-            }
-
-            option2.legend.y = -30;
-            option2.toolbox.y = -30;
-            option2.grid = { y: 5 };
-            option2.tooltip.showContent = true;
-            option2.tooltip.trigger = 'item';
-            option2.tooltip.axisPointer.type = 'none';
-            option2.tooltip.showDelay = 20;
-            option2.tooltip.transitionDuration = 0.4;
-            option2.tooltip.formatter = '{c}';
-
-            option1.dataZoom = null;
+        })(app);
 
 
-            var chartEl1 = $('<div style="width:100%; height: 400px;"></div>');
-            var chartEl2 = $('<div style="width:100%; height: 150px;"></div>');
-            var isRenderd = false;
-            panel.find('.panel-body').append(chartEl1);
-            panel.find('.panel-body').append(chartEl2);
-            $(panel).on('shown.bs.collapse', function () {
-                if (!isRenderd) {
-                    isRenderd = true;
+        //----------------------------------------------------------------
+        // Helper methods
+        //----------------------------------------------------------------
+        (function (app) {
+            app.helpers = {
+                getSeriesFromQuantConnectCahrts: function() {
+                    return $.map(_data.Charts, function(chart) {
+                        return $.map(chart.Series, function(s) {
+                            var track = {
+                                name: s.Name,
+                                type: app.helpers.getSeriesType(s.SeriesType),
+                                symbol: 'none'
+                            };
+                            track.data = [];
+                            $.each(s.Values, function(k, item) {
+                                var time;
+                                if (isNaN(item.x)) {
+                                    time = moment(item.x).toDate();
+                                } else {
+                                    time = new Date(item.x * 1000);
+                                }
+                                track.data.push([time, item.y]);
+                            });
+                            return track;
+                        });
+                    });
+                },
 
-                    var echart1 = echarts.init(chartEl1.get(0));
-                    echart1.setOption(option1);
-                    $(window).resize(echart1.resize);
-                    hackEchartToFixedDisplayIssues(echart1);
+                getSeriesFromQuantConnectOrders: function() {
+                    var ordersSeries = {};
+                    $.each(_data['Orders'], function(k, v) {
+                        var key = v.Symbol.Value + '_' + app.helpers.getOrderDirection(v.Direction);
+                        var series = ordersSeries[key];
+                        if (!series) {
+                            series = {
+                                name: key,
+                                type: 'scatter',
+                                data: []
+                            }
+                            series.symbol = 'triangle';
+                            series.symbolSize = 6;
+                            if (v.Direction == 1)
+                                series.symbolRotate = 180;
+                            ordersSeries[key] = series;
+                        }
 
-                    var echart2 = echarts.init(chartEl2.get(0));
-                    echart2.setOption(option2);
-                    $(window).resize(echart2.resize);
+                        var time = v.Time;
+                        if (time.indexOf('Z') == -1)
+                            time += 'Z';
+                        series.data.push([
+                            moment(time).toDate(),
+                            v.Price
+                        ]);
+                    });
+                    var series = [];
+                    $.each(ordersSeries, function(k, v) {
+                        series.push(v);
+                    });
+                    return series;
+                },
 
-                    echart1.connect([echart2]);
-                    echart2.connect([echart1]);
-                }
-            });
-        }
+                getDefaultEchartOptions: function() {
+                    return {
+                        tooltip: {
+                            trigger: 'axis',
+                            showContent: false,
+                            axisPointer: {
+                                type: 'cross'
+                            },
+                            transitionDuration: 0,
+                            showDelay: 0,
+                            formatter: null
+                        },
+                        toolbox: {
+                            show: true,
+                            feature: {
+                                mark: {
+                                    show: true,
+                                    title: {
+                                        mark: 'Mark',
+                                        markUndo: 'Undo',
+                                        markClear: 'Clear'
+                                    }
+                                },
+                                //magicType: { show: true, type: ['line', 'bar'] },
+                                restore: {
+                                    show: true,
+                                    title: 'Reset'
+                                },
+                                dataZoom: {
+                                    show: true,
+                                    title: {
+                                        dataZoom: 'Zoom',
+                                        dataZoomReset: 'Reset Zoom'
+                                    }
+                                }
+                            }
+                        },
+                        xAxis: [
+                            {
+                                type: 'time',
+                                splitNumber: 10
+                            }
+                        ],
+                        yAxis: [
+                            {
+                                type: 'value',
+                                scale: true
+                            }
+                        ]
+                    };
+                },
 
-        function getEchartBaseOptions(chart) {
-            var series = $.map(chart.Series, function (s) {
-                var track = {
-                    name: s.Name,
-                    type: getSeriesType(s.SeriesType),
-                    symbol: 'none'
-                };
-                track.data = [];
-                $.each(s.Values, function (k, item) {
-                    var time;
-                    if (isNaN(item.x)) {
-                        time = moment(item.x).toDate();
-                    } else {
-                        time = new Date(item.x * 1000);
+                getSeriesType: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'line';
+                    case 1:
+                        return 'scatter';
+                    case 2:
+                        return 'line';
+                    case 3:
+                        return 'bar';
+                    default:
+                        return 'line';
                     }
-                    track.data.push([time, item.y]);
-                });
-                return track;
-            });
-
-            var legendData = $.map(series, function (x) {
-                return x.name;
-            });
-
-            return {
-                tooltip: {
-                    trigger: 'axis',
-                    showContent: false,
-                    axisPointer: {
-                        type: 'cross'
-                    },
-                    transitionDuration: 0,
-                    showDelay: 0,
-                    formatter: null
                 },
-                legend: {
-                    data: legendData
+
+                getOrderType: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'Market';
+                    case 1:
+                        return 'Limit';
+                    case 2:
+                        return 'StopMarket';
+                    case 3:
+                        return 'StopLimit';
+                    case 4:
+                        return 'MarketOnOpen';
+                    case 5:
+                        return 'MarketOnClose';
+                    default:
+                        return '';
+                    }
                 },
-                toolbox: {
-                    show: true,
-                    feature: {
-                        mark: {
-                            show: true,
-                            title: {
-                                mark: 'Mark',
-                                markUndo: 'Undo',
-                                markClear: 'Clear'
+
+                getOrderDirection: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'Buy';
+                    case 1:
+                        return 'Sell';
+                    case 2:
+                        return 'Hold';
+                    default:
+                        return '';
+                    }
+                },
+
+                getOrderStatus: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'New';
+                    case 1:
+                        return 'Submitted';
+                    case 2:
+                        return 'PartiallyFilled';
+                    case 3:
+                        return 'Filled';
+                    case 5:
+                        return 'Canceled';
+                    case 6:
+                        return 'None';
+                    case 7:
+                        return 'Invalid';
+                    default:
+                        return '';
+                    }
+                }
+            };
+        })(app);
+
+
+        //----------------------------------------------------------------
+        // Echart helpers
+        //----------------------------------------------------------------
+        (function (app) {
+            app.echart = {};
+            app.echart.helpers = {
+                hackEchartToFixedDisplayIssues: function (echart) {
+                    // hack this function to modify echart to display date correctly in cross mode
+                    var originalFuc = echart.component.tooltip._styleAxisPointer;
+                    echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
+                        var self = echart.component.tooltip;
+                        originalFuc.apply(self, arguments);
+
+                        // calc y calue
+                        var yAxis = this.component.yAxis.getAxis(0);
+                        var coord = y;
+                        coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
+                        coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
+                        var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
+
+                        // adjust decimal point base on max min diff
+                        if ((yAxis._max - yAxis._min) < 5) {
+                            yVal = yVal.toFixed(4) - 0;
+                        } else {
+                            yVal = yVal.toFixed(2) - 0;
+                        }
+
+                        // override text to changed display value
+                        self._axisCrossShape.style.text = ('( '
+                                + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
+                                + ' , '
+                                + yVal
+                                + ' )'
+                        ).replace('  , ', ' ').replace(' ,  ', ' ');
+                    };
+                }
+            };
+        })(app);
+
+
+        //----------------------------------------------------------------
+        // Chart Render
+        //----------------------------------------------------------------
+        (function(app) {
+            app.chartRender = {
+                plots: [],
+
+                render: function() {
+                    var self = this;
+
+                    // get all plots from chart builder
+                    this.plots = app.chartBuilder.getData();
+                    console.log('plots: ', this.plots);
+
+                    // create an inner div to hold all plots
+                    var divToSplit = $('<div style="width:100%; height:100%;"></div>');
+                    $('#chart-wrapper').empty().append(divToSplit);
+
+                    // get number of splits
+                    var splits = this.plots.length - 1;
+                    console.log('plits: ', splits);
+
+                    if (splits > 0) {
+                        var counter = 0;
+                        for (var i = 0; i < splits; i++) {
+                            var div1 = $('<div></div>');
+                            var div2 = $('<div></div>');
+                            divToSplit.append(div1);
+                            divToSplit.append(div2);
+                            $(divToSplit).split({
+                                orientation: 'horizontal',
+                                limit: 20,
+                                position: (100 / (splits + 1 - i)) + '%',
+                                onDrag: function() {
+                                    self.resizeAllPlots();
+                                }
+                            });
+                            this.plots[counter++].div = div1;
+                            if (i == splits - 1) {
+                                console.log('counter:', counter);
+                                this.plots[counter].div = div2;
                             }
-                        },
-                        //magicType: { show: true, type: ['line', 'bar'] },
-                        restore: {
-                            show: true,
-                            title: 'Reset'
-                        },
-                        dataZoom: {
-                            show: true,
-                            title: {
-                                dataZoom: 'Zoom',
-                                dataZoomReset: 'Reset Zoom'
-                            }
+                            divToSplit = div2;
                         }
                     }
-                },
-                xAxis: [
-                    {
-                        type: 'time',
-                        splitNumber: 10
+
+                    //only one plot no need to split 
+                    if (splits == 0) {
+                        this.plots[0].div = divToSplit;
                     }
-                ],
-                yAxis: [
-                    {
-                        type: 'value',
-                        scale: true
+
+                    // create the echarts
+                    for (var i = 0; i < this.plots.length; i++) {
+                        var plot = this.plots[i];
+
+                        // get plot echart option
+                        var option = app.helpers.getDefaultEchartOptions();
+                        option.series = plot.series;
+
+                        // set legend 
+                        option.legend = {
+                            data: $.map(option.series, function(item) {
+                                return item.name;
+                            })
+                        };
+                        console.log('lefend: ', option.lengend);
+
+                        // if first add zoom tool
+                        if (i == 0) {
+                            option.dataZoom = {
+                                show: true,
+                                realtime: true,
+                                y: 30,
+                                height: 25
+                            };
+                        }
+
+                        // create the echart
+                        plot.echart = echarts.init(plot.div.get(0));
+                        plot.echart.setOption(option);
+                        app.echart.helpers.hackEchartToFixedDisplayIssues(plot.echart);
                     }
-                ],
-                series: series,
-                dataZoom: {
-                    show: true,
-                    realtime: true
+
+                    // connect all charts
+                    for (var i = 0; i < this.plots.length; i++) {
+                        var others = [];
+                        for (var j = 0; j < this.plots.length; j++) {
+                            if (i != j) {
+                                others.push(this.plots[j].echart);
+                            }
+                        }
+                        if (others.length > 0) {
+                            this.plots[i].echart.connect(others);
+                        }
+                    }
+
                 },
+
+                resizeAllPlots: function() {
+                    for (var i = 0; i < this.plots.length; i++) {
+                        this.plots[i].echart.resize();
+                    }
+                }
             };
-        }
+        })(app);
 
-        function displyChart(chart) {
-            var panel = createCollapeContainer(chart.Name);
-            var chartEl = $('<div style="width:100%; height: 500px;"></div>');
-            panel.find('.panel-body').append(chartEl);
-            var isRenderd = false;
-            $(panel).on('shown.bs.collapse', function () {
-                if (!isRenderd) {
-                    isRenderd = true;
 
-                    var echart = echarts.init(chartEl.get(0));
-                    echart.setOption(getEchartBaseOptions(chart));
-                    $(window).resize(echart.resize);
+        //----------------------------------------------------------------
+        // Summary render
+        //----------------------------------------------------------------
+        (function(app) {
+            app.summaryRender = {
+                renderStats: function() {
+                    var stats = _data['Statistics'];
+                    var i = 0;
+                    var table = $('#statistics');
+                    var tr = null;
+                    $.each(stats, function (k, v) {
+                        if (i % 2 == 0) {
+                            tr = $('<tr></tr>');
+                            table.append(tr);
+                        }
+                        i++;
+                        tr.append('<td>' + k + '</td><td>' + v + '</td>');
+                    });
+                },
 
-                    hackEchartToFixedDisplayIssues(echart);
+                renderTradeList: function() {
+                    var orders = _data['Orders'];
+                    var tbody = $('#trades-table tbody');
+                    $.each(orders, function (k, v) {
+                        tr = $('<tr></tr>');
+                        tr.append('<td>' + v.Time + '</td>');
+                        tr.append('<td>' + v.Symbol.Value + '</td>');
+                        tr.append('<td>' + v.Price + '</td>');
+                        tr.append('<td>' + app.helpers.getOrderType(v.Type) + '</td>');
+                        tr.append('<td>' + v.Quantity + '</td>');
+                        tr.append('<td>' + app.helpers.getOrderDirection(v.Direction) + '</td>');
+                        tr.append('<td>' + app.helpers.getOrderStatus(v.Status) + '</td>');
+                        tr.append('<td>' + v.Tag + '</td>');
+                        tbody.append(tr);
+                    });
                 }
-            });
-        }
-
-        function hackEchartToFixedDisplayIssues(echart) {
-            // hack this function to modify echart to display date correctly in cross mode
-            var originalFuc = echart.component.tooltip._styleAxisPointer;
-            echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
-                var self = echart.component.tooltip;
-                originalFuc.apply(self, arguments);
-
-                // calc y calue
-                var yAxis = this.component.yAxis.getAxis(0);
-                var coord = y;
-                coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
-                coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
-                var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
-
-                // adjust decimal point base on max min diff
-                if ((yAxis._max - yAxis._min) < 5) {
-                    yVal = yVal.toFixed(4) - 0;
-                } else {
-                    yVal = yVal.toFixed(2) - 0;
-                }
-
-                // override text to changed display value
-                self._axisCrossShape.style.text = ('( '
-                        + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
-                        + ' , '
-                        + yVal
-                        + ' )'
-                ).replace('  , ', ' ').replace(' ,  ', ' ');
-            };
-        }
-
-        function getSeriesType(id) {
-            switch (id) {
-                case 0:
-                    return 'line';
-                case 1:
-                    return 'scatter';
-                case 2:
-                    return 'line';
-                case 3:
-                    return 'bar';
-                default:
-                    return 'line';
             }
-        }
-
-        function buildStatistics() {
-            var stats = _data['Statistics'];
-            var i = 0;
-            var table = $('#statistics');
-            var tr = null;
-            $.each(stats, function (k, v) {
-                if (i % 2 == 0) {
-                    tr = $('<tr></tr>');
-                    table.append(tr);
-                }
-                i++;
-                tr.append('<td>' + k + '</td><td>' + v + '</td>');
-            });
-        }
-
-        function buildTradesList() {
-            var orders = _data['Orders'];
-            var tbody = $('#trades-table tbody');
-            $.each(orders, function (k, v) {
-                tr = $('<tr></tr>');
-                tr.append('<td>' + v.Time + '</td>');
-                tr.append('<td>' + v.Symbol.Value + '</td>');
-                tr.append('<td>' + v.Price + '</td>');
-                tr.append('<td>' + getOrderType(v.Type) + '</td>');
-                tr.append('<td>' + v.Quantity + '</td>');
-                tr.append('<td>' + getOrderDirection(v.Direction) + '</td>');
-                tr.append('<td>' + getOrderStatus(v.Status) + '</td>');
-                tr.append('<td>' + v.Tag + '</td>');
-                tbody.append(tr);
-            });
-        }
-
-        function buildTradesChart() {
-            var orders = _data['Orders'];
-            var panel = createCollapeContainer('Trades');
-
-            var charts = {};
-
-            $.each(orders, function (k, v) {
-                var chart = charts[v.Symbol.Value];
-                if (!chart) {
-                    chart = { Series: {} };
-                    charts[v.Symbol.Value] = chart;
-                }
-                var direction = getOrderDirection(v.Direction);
-                var track = chart.Series[direction];
-                if (!track) {
-                    track = {
-                        Name: direction,
-                        Values: []
-                    };
-                    chart.Series[direction] = track;
-                }
-
-                var time = v.Time;
-                if (time.indexOf('Z') == -1)
-                    time += 'Z';
-                track.Values.push({
-                    x: time,
-                    y: v.Price
-                });
-            });
+        })(app);
 
 
-            var navTabs = $('<ul class="nav nav-tabs" role="tablist"></ul>');
-            $.each(charts, function (k, v) {
-                var tab = $('<li><a href="#overview" data-toggle="tab">' + k + '</a></li>');
-                tab.data('key', k);
-                navTabs.append(tab);
-            });
-
-
-            var chartEl = $('<div style="width:100%; height: 500px;"></div>');
-            panel.find('.panel-body').append(navTabs).append(chartEl);
-
-            var firstTab = navTabs.find('li:first-child');
-            firstTab.addClass('active');
-
-
-            var display = function (key) {
-                var option = getEchartBaseOptions(charts[key]);
-                option.tooltip.showContent = true;
-                option.tooltip.trigger = 'item';
-                option.tooltip.axisPointer.type = 'none';
-
-                $(option.series).each(function (key, item) {
-                    item.type = 'scatter';
-                    item.symbol = 'triangle';
-                    item.symbolSize = 6;
-                    if (item.name == 'Sell')
-                        item.symbolRotate = 180;
-                });
-
-                var echart = echarts.init(chartEl.get(0));
-                echart.setOption(option);
-                $(window).resize(echart.resize);
-            };
-
-
-            $(panel).on('shown.bs.collapse', function () {
-                display(firstTab.data('key'));
-            });
-
-            navTabs.find('a').click(function () {
-                display($(this).text());
-            });
-
-
-        }
-
-        function getOrderType(id) {
-            switch (id) {
-                case 0:
-                    return 'Market';
-                case 1:
-                    return 'Limit';
-                case 2:
-                    return 'StopMarket';
-                case 3:
-                    return 'StopLimit';
-                case 4:
-                    return 'MarketOnOpen';
-                case 5:
-                    return 'MarketOnClose';
-                default:
-                    return '';
-            }
-        }
-
-        function getOrderDirection(id) {
-            switch (id) {
-                case 0:
-                    return 'Buy';
-                case 1:
-                    return 'Sell';
-                case 2:
-                    return 'Hold';
-                default:
-                    return '';
-            }
-        }
-
-        function getOrderStatus(id) {
-            switch (id) {
-                case 0:
-                    return 'New';
-                case 1:
-                    return 'Submitted';
-                case 2:
-                    return 'PartiallyFilled';
-                case 3:
-                    return 'Filled';
-                case 5:
-                    return 'Canceled';
-                case 6:
-                    return 'None';
-                case 7:
-                    return 'Invalid';
-                default:
-                    return '';
-            }
-        }
-
+        //----------------------------------------------------------------
+        // Start
+        //----------------------------------------------------------------
         $(function () {
-            displayStrategyEquity(_data.Charts['Strategy Equity']);
-            $.each(_data.Charts, function (k, v) {
-                if (v.Name != 'Strategy Equity') {
-                    displyChart(v);
+
+            // set main split
+            $('#main').split({
+                orientation: 'horizontal',
+                limit: 20,
+                position: '80%',
+                onDrag: function() {
+                    app.chartRender.resizeAllPlots();
                 }
             });
 
-            buildStatistics();
-            buildTradesList();
-            buildTradesChart();
+            // get all series
+            var series = app.helpers.getSeriesFromQuantConnectCahrts();
+
+            // add trades searies
+            series = series.concat(app.helpers.getSeriesFromQuantConnectOrders());
+            
+            // init chart builder
+            app.chartBuilder.init(series);
+
+            // init chart builder with equity strategy
+            app.chartBuilder.setStrategyEquityChart();
+
+            // render chart with cahrt builder data
+            app.chartRender.render();
+
+            // on modal save click
+            $('#custom-chart-modal .btn-primary').click(function () {
+                app.chartRender.render();
+            });
+
+            // render summary
+            app.summaryRender.renderStats();
+            app.summaryRender.renderTradeList();
+
         });
+
+
+
+        //------------------------------------------------------------------
+        // Splitter plugin
+        // Origin: https://github.com/jcubic/jquery.splitter
+        //------------------------------------------------------------------
+        (function ($, undefined) {
+            var count = 0;
+            var splitter_id = null;
+            var splitters = [];
+            var current_splitter = null;
+            $.fn.split = function (options) {
+                var data = this.data('splitter');
+                if (data) {
+                    return data;
+                }
+                var panel_1;
+                var panel_2;
+                var settings = $.extend({
+                    limit: 100,
+                    orientation: 'horizontal',
+                    position: '50%',
+                    invisible: false,
+                    onDragStart: $.noop,
+                    onDragEnd: $.noop,
+                    onDrag: $.noop
+                }, options || {});
+                this.settings = settings;
+                var cls;
+                var children = this.children();
+                if (settings.orientation == 'vertical') {
+                    panel_1 = children.first().addClass('left_panel');
+                    panel_2 = panel_1.next().addClass('right_panel');
+                    cls = 'vsplitter';
+                } else if (settings.orientation == 'horizontal') {
+                    panel_1 = children.first().addClass('top_panel')
+                    panel_2 = panel_1.next().addClass('bottom_panel');
+                    cls = 'hsplitter';
+                }
+                if (settings.invisible) {
+                    cls += ' splitter-invisible';
+                }
+                var width = this.width();
+                var height = this.height();
+                var id = count++;
+                this.addClass('splitter_panel');
+                var splitter = $('<div/>').addClass(cls).bind('mouseenter touchstart', function () {
+                    splitter_id = id;
+                }).bind('mouseleave touchend', function () {
+                    splitter_id = null;
+                }).insertAfter(panel_1);
+                var position;
+
+                function get_position(position) {
+                    if (typeof position === 'number') {
+                        return position;
+                    } else if (typeof position === 'string') {
+                        var match = position.match(/^([0-9\.]+)(px|%)$/);
+                        if (match) {
+                            if (match[2] == 'px') {
+                                return +match[1];
+                            } else {
+                                if (settings.orientation == 'vertical') {
+                                    return (width * +match[1]) / 100;
+                                } else if (settings.orientation == 'horizontal') {
+                                    return (height * +match[1]) / 100;
+                                }
+                            }
+                        } else {
+                            //throw position + ' is invalid value';
+                        }
+                    } else {
+                        //throw 'position have invalid type';
+                    }
+                }
+
+                var self = $.extend(this, {
+                    refresh: function () {
+                        var new_width = this.width();
+                        var new_height = this.height();
+                        if (width != new_width || height != new_height) {
+                            width = this.width();
+                            height = this.height();
+                            self.position(position);
+                        }
+                    },
+                    position: (function () {
+                        if (settings.orientation == 'vertical') {
+                            return function (n, silent) {
+                                if (n === undefined) {
+                                    return position;
+                                } else {
+                                    position = get_position(n);
+                                    var sw = splitter.width();
+                                    var sw2 = sw / 2;
+                                    if (settings.invisible) {
+                                        var pw = panel_1.width(position).outerWidth();
+                                        panel_2.width(self.width() - pw);
+                                        splitter.css('left', pw - sw2);
+                                    } else {
+                                        var pw = panel_1.width(position - sw2).outerWidth();
+                                        panel_2.width(self.width() - pw - sw);
+                                        splitter.css('left', pw);
+                                    }
+                                }
+                                if (!silent) {
+                                    self.find('.splitter_panel').trigger('splitter.resize');
+                                }
+                                return self;
+                            };
+                        } else if (settings.orientation == 'horizontal') {
+                            return function (n, silent) {
+                                if (n === undefined) {
+                                    return position;
+                                } else {
+                                    position = get_position(n);
+                                    var sw = splitter.height();
+                                    var sw2 = sw / 2;
+                                    if (settings.invisible) {
+                                        var pw = panel_1.height(position).outerHeight();
+                                        panel_2.height(self.height() - pw);
+                                        splitter.css('top', pw - sw2);
+                                    } else {
+                                        var pw = panel_1.height(position - sw2).outerHeight();
+                                        panel_2.height(self.height() - pw - sw);
+                                        splitter.css('top', pw);
+                                    }
+                                }
+                                if (!silent) {
+                                    self.find('.splitter_panel').trigger('splitter.resize');
+                                }
+                                return self;
+                            };
+                        } else {
+                            return $.noop;
+                        }
+                    })(),
+                    orientation: settings.orientation,
+                    limit: settings.limit,
+                    isActive: function () {
+                        return splitter_id === id;
+                    },
+                    destroy: function () {
+                        self.removeClass('splitter_panel');
+                        splitter.unbind('mouseenter');
+                        splitter.unbind('mouseleave');
+                        splitter.unbind('touchstart');
+                        splitter.unbind('touchmove');
+                        splitter.unbind('touchend');
+                        splitter.unbind('touchleave');
+                        splitter.unbind('touchcancel');
+                        if (settings.orientation == 'vertical') {
+                            panel_1.removeClass('left_panel');
+                            panel_2.removeClass('right_panel');
+                        } else if (settings.orientation == 'horizontal') {
+                            panel_1.removeClass('top_panel');
+                            panel_2.removeClass('bottom_panel');
+                        }
+                        self.unbind('splitter.resize');
+                        self.find('.splitter_panel').trigger('splitter.resize');
+                        splitters.splice(id, 1);
+                        count--;
+                        splitter.remove();
+                        var not_null = false;
+                        for (var i = splitters.length; i--;) {
+                            if (splitters[i] !== null) {
+                                not_null = true;
+                                break;
+                            }
+                        }
+                        //remove document events when no splitters
+                        if (!not_null) {
+                            $(document.documentElement).unbind('.splitter');
+                            $(window).unbind('resize.splitter');
+                            self.data('splitter', null);
+                            splitters = [];
+                            count = 0;
+                        }
+                    }
+                });
+                self.bind('splitter.resize', function (e) {
+                    var pos = self.position();
+                    if (self.orientation == 'vertical' &&
+                        pos > self.width()) {
+                        pos = self.width() - self.limit - 1;
+                    } else if (self.orientation == 'horizontal' &&
+                               pos > self.height()) {
+                        pos = self.height() - self.limit - 1;
+                    }
+                    if (pos < self.limit) {
+                        pos = self.limit + 1;
+                    }
+                    self.position(pos, true);
+                });
+                //inital position of splitter
+                var pos;
+                if (settings.orientation == 'vertical') {
+                    if (pos > width - settings.limit) {
+                        pos = width - settings.limit;
+                    } else {
+                        pos = get_position(settings.position);
+                    }
+                } else if (settings.orientation == 'horizontal') {
+                    //position = height/2;
+                    if (pos > height - settings.limit) {
+                        pos = height - settings.limit;
+                    } else {
+                        pos = get_position(settings.position);
+                    }
+                }
+                if (pos < settings.limit) {
+                    pos = settings.limit;
+                }
+                self.position(pos, true);
+                if (splitters.length == 0) { // first time bind events to document
+                    $(window).bind('resize.splitter', function () {
+                        $.each(splitters, function (i, splitter) {
+                            splitter.refresh();
+                        });
+                    });
+                    $(document.documentElement).bind('mousedown.splitter touchstart.splitter', function (e) {
+                        if (splitter_id !== null) {
+                            current_splitter = splitters[splitter_id];
+                            $('<div class="splitterMask"></div>').css('cursor', current_splitter.children().eq(1).css('cursor')).insertAfter(current_splitter);
+                            current_splitter.settings.onDragStart(e);
+                            return false;
+                        }
+                    }).bind('mouseup.splitter touchend.splitter touchleave.splitter touchcancel.splitter', function (e) {
+                        if (current_splitter) {
+                            $('.splitterMask').remove();
+                            current_splitter.settings.onDragEnd(e);
+                            current_splitter = null;
+                        }
+                    }).bind('mousemove.splitter touchmove.splitter', function (e) {
+                        if (current_splitter !== null) {
+                            var limit = current_splitter.limit;
+                            var offset = current_splitter.offset();
+                            if (current_splitter.orientation == 'vertical') {
+                                var pageX = e.pageX;
+                                if (e.originalEvent && e.originalEvent.changedTouches) {
+                                    pageX = e.originalEvent.changedTouches[0].pageX;
+                                }
+                                var x = pageX - offset.left;
+                                if (x <= current_splitter.limit) {
+                                    x = current_splitter.limit + 1;
+                                } else if (x >= current_splitter.width() - limit) {
+                                    x = current_splitter.width() - limit - 1;
+                                }
+                                if (x > current_splitter.limit &&
+                                    x < current_splitter.width() - limit) {
+                                    current_splitter.position(x, true);
+                                    current_splitter.find('.splitter_panel').
+                                        trigger('splitter.resize');
+                                    e.preventDefault();
+                                }
+                            } else if (current_splitter.orientation == 'horizontal') {
+                                var pageY = e.pageY;
+                                if (e.originalEvent && e.originalEvent.changedTouches) {
+                                    pageY = e.originalEvent.changedTouches[0].pageY;
+                                }
+                                var y = pageY - offset.top;
+                                if (y <= current_splitter.limit) {
+                                    y = current_splitter.limit + 1;
+                                } else if (y >= current_splitter.height() - limit) {
+                                    y = current_splitter.height() - limit - 1;
+                                }
+                                if (y > current_splitter.limit &&
+                                    y < current_splitter.height() - limit) {
+                                    current_splitter.position(y, true);
+                                    current_splitter.find('.splitter_panel').
+                                        trigger('splitter.resize');
+                                    e.preventDefault();
+                                }
+                            }
+                            current_splitter.settings.onDrag(e);
+                        }
+                    });
+                }
+                splitters.push(self);
+                self.data('splitter', self);
+                return self;
+            };
+        })(jQuery);
+
     </script>
 </body>
 
