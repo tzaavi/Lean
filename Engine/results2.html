@@ -176,19 +176,6 @@
     <script src="https://cdn.bootcss.com/echarts/2.2.7/echarts-all.js"></script>
 
     <script>
-        /*
-            ChartType:
-                Overlay = 0
-                Stacked = 1
-
-            SeriesType:
-                Line = 0
-                Scatter = 1
-                Chandle = 2
-                Bar = 3
-                Flag = 4
-        */
-
         var app = {};
 
 
@@ -220,7 +207,7 @@
 
                 addEmptyPanel: function() {
                     var self = this;
-                    var panelEl = $('<div class="panel panel-default"><div class="panel-heading">Plot Panel</div><div class="panel-body"></div></div>');
+                    var panelEl = $('<div class="panel panel-default"><div class="panel-heading clearfix">Plot Panel <a class="btn btn-default btn-xs pull-right remove-panel">x</a></div><div class="panel-body"></div></div>');
                     var select = $('<select class="form-control"><option>Add Series</option></select>');
                     var seriesWrapper = $('<div class="series-wrapper"></div>');
                     $(panelEl).find('.panel-body').append(seriesWrapper).append(select);
@@ -241,6 +228,11 @@
                         op.text(item.name);
                         op.data('series', item);
                         $(select).append(op);
+                    });
+
+                    // remove panel click
+                    panelEl.find('.remove-panel').click(function() {
+                        panelEl.remove();
                     });
 
                     return panelEl;
@@ -299,7 +291,7 @@
                         return $.map(chart.Series, function(s) {
                             var track = {
                                 name: s.Name,
-                                type: getSeriesType(s.SeriesType),
+                                type: app.helpers.getSeriesType(s.SeriesType),
                                 symbol: 'none'
                             };
                             track.data = [];
@@ -320,7 +312,7 @@
                 getSeriesFromQuantConnectOrders: function() {
                     var ordersSeries = {};
                     $.each(_data['Orders'], function(k, v) {
-                        var key = v.Symbol.Value + '_' + getOrderDirection(v.Direction);
+                        var key = v.Symbol.Value + '_' + app.helpers.getOrderDirection(v.Direction);
                         var series = ordersSeries[key];
                         if (!series) {
                             series = {
@@ -400,6 +392,114 @@
                             }
                         ]
                     };
+                },
+
+                getSeriesType: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'line';
+                    case 1:
+                        return 'scatter';
+                    case 2:
+                        return 'line';
+                    case 3:
+                        return 'bar';
+                    default:
+                        return 'line';
+                    }
+                },
+
+                getOrderType: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'Market';
+                    case 1:
+                        return 'Limit';
+                    case 2:
+                        return 'StopMarket';
+                    case 3:
+                        return 'StopLimit';
+                    case 4:
+                        return 'MarketOnOpen';
+                    case 5:
+                        return 'MarketOnClose';
+                    default:
+                        return '';
+                    }
+                },
+
+                getOrderDirection: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'Buy';
+                    case 1:
+                        return 'Sell';
+                    case 2:
+                        return 'Hold';
+                    default:
+                        return '';
+                    }
+                },
+
+                getOrderStatus: function(id) {
+                    switch (id) {
+                    case 0:
+                        return 'New';
+                    case 1:
+                        return 'Submitted';
+                    case 2:
+                        return 'PartiallyFilled';
+                    case 3:
+                        return 'Filled';
+                    case 5:
+                        return 'Canceled';
+                    case 6:
+                        return 'None';
+                    case 7:
+                        return 'Invalid';
+                    default:
+                        return '';
+                    }
+                }
+            };
+        })(app);
+
+
+        //----------------------------------------------------------------
+        // Echart helpers
+        //----------------------------------------------------------------
+        (function (app) {
+            app.echart = {};
+            app.echart.helpers = {
+                hackEchartToFixedDisplayIssues: function (echart) {
+                    // hack this function to modify echart to display date correctly in cross mode
+                    var originalFuc = echart.component.tooltip._styleAxisPointer;
+                    echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
+                        var self = echart.component.tooltip;
+                        originalFuc.apply(self, arguments);
+
+                        // calc y calue
+                        var yAxis = this.component.yAxis.getAxis(0);
+                        var coord = y;
+                        coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
+                        coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
+                        var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
+
+                        // adjust decimal point base on max min diff
+                        if ((yAxis._max - yAxis._min) < 5) {
+                            yVal = yVal.toFixed(4) - 0;
+                        } else {
+                            yVal = yVal.toFixed(2) - 0;
+                        }
+
+                        // override text to changed display value
+                        self._axisCrossShape.style.text = ('( '
+                                + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
+                                + ' , '
+                                + yVal
+                                + ' )'
+                        ).replace('  , ', ' ').replace(' ,  ', ' ');
+                    };
                 }
             };
         })(app);
@@ -477,7 +577,7 @@
                         // create the echart
                         plot.echart = echarts.init(plot.div.get(0));
                         plot.echart.setOption(option);
-                        hackEchartToFixedDisplayIssues(plot.echart);
+                        app.echart.helpers.hackEchartToFixedDisplayIssues(plot.echart);
                     }
 
                     // connect all charts
@@ -504,219 +604,8 @@
         })(app);
 
 
-
-        function hackEchartToFixedDisplayIssues(echart) {
-            // hack this function to modify echart to display date correctly in cross mode
-            var originalFuc = echart.component.tooltip._styleAxisPointer;
-            echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
-                var self = echart.component.tooltip;
-                originalFuc.apply(self, arguments);
-
-                // calc y calue
-                var yAxis = this.component.yAxis.getAxis(0);
-                var coord = y;
-                coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
-                coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
-                var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
-
-                // adjust decimal point base on max min diff
-                if ((yAxis._max - yAxis._min) < 5) {
-                    yVal = yVal.toFixed(4) - 0;
-                } else {
-                    yVal = yVal.toFixed(2) - 0;
-                }
-
-                // override text to changed display value
-                self._axisCrossShape.style.text = ('( '
-                        + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
-                        + ' , '
-                        + yVal
-                        + ' )'
-                ).replace('  , ', ' ').replace(' ,  ', ' ');
-            };
-        }
-
-        function getSeriesType(id) {
-            switch (id) {
-                case 0:
-                    return 'line';
-                case 1:
-                    return 'scatter';
-                case 2:
-                    return 'line';
-                case 3:
-                    return 'bar';
-                default:
-                    return 'line';
-            }
-        }
-
-        function buildStatistics() {
-            var stats = _data['Statistics'];
-            var i = 0;
-            var table = $('#statistics');
-            var tr = null;
-            $.each(stats, function (k, v) {
-                if (i % 2 == 0) {
-                    tr = $('<tr></tr>');
-                    table.append(tr);
-                }
-                i++;
-                tr.append('<td>' + k + '</td><td>' + v + '</td>');
-            });
-        }
-
-        function buildTradesList() {
-            var orders = _data['Orders'];
-            var tbody = $('#trades-table tbody');
-            $.each(orders, function (k, v) {
-                tr = $('<tr></tr>');
-                tr.append('<td>' + v.Time + '</td>');
-                tr.append('<td>' + v.Symbol.Value + '</td>');
-                tr.append('<td>' + v.Price + '</td>');
-                tr.append('<td>' + getOrderType(v.Type) + '</td>');
-                tr.append('<td>' + v.Quantity + '</td>');
-                tr.append('<td>' + getOrderDirection(v.Direction) + '</td>');
-                tr.append('<td>' + getOrderStatus(v.Status) + '</td>');
-                tr.append('<td>' + v.Tag + '</td>');
-                tbody.append(tr);
-            });
-        }
-
-        function buildTradesChart() {
-            var orders = _data['Orders'];
-            var panel = createCollapeContainer('Trades');
-
-            var charts = {};
-
-            $.each(orders, function (k, v) {
-                var chart = charts[v.Symbol.Value];
-                if (!chart) {
-                    chart = { Series: {} };
-                    charts[v.Symbol.Value] = chart;
-                }
-                var direction = getOrderDirection(v.Direction);
-                var track = chart.Series[direction];
-                if (!track) {
-                    track = {
-                        Name: direction,
-                        Values: []
-                    };
-                    chart.Series[direction] = track;
-                }
-
-                var time = v.Time;
-                if (time.indexOf('Z') == -1)
-                    time += 'Z';
-                track.Values.push({
-                    x: time,
-                    y: v.Price
-                });
-            });
-
-
-            var navTabs = $('<ul class="nav nav-tabs" role="tablist"></ul>');
-            $.each(charts, function (k, v) {
-                var tab = $('<li><a href="#overview" data-toggle="tab">' + k + '</a></li>');
-                tab.data('key', k);
-                navTabs.append(tab);
-            });
-
-
-            var chartEl = $('<div style="width:100%; height: 500px;"></div>');
-            panel.find('.panel-body').append(navTabs).append(chartEl);
-
-            var firstTab = navTabs.find('li:first-child');
-            firstTab.addClass('active');
-
-
-            var display = function (key) {
-                var option = getEchartBaseOptions(charts[key]);
-                option.tooltip.showContent = true;
-                option.tooltip.trigger = 'item';
-                option.tooltip.axisPointer.type = 'none';
-
-                $(option.series).each(function (key, item) {
-                    item.type = 'scatter';
-                    item.symbol = 'triangle';
-                    item.symbolSize = 6;
-                    if (item.name == 'Sell')
-                        item.symbolRotate = 180;
-                });
-
-                var echart = echarts.init(chartEl.get(0));
-                echart.setOption(option);
-                $(window).resize(echart.resize);
-            };
-
-
-            $(panel).on('shown.bs.collapse', function () {
-                display(firstTab.data('key'));
-            });
-
-            navTabs.find('a').click(function () {
-                display($(this).text());
-            });
-
-
-        }
-
-        function getOrderType(id) {
-            switch (id) {
-                case 0:
-                    return 'Market';
-                case 1:
-                    return 'Limit';
-                case 2:
-                    return 'StopMarket';
-                case 3:
-                    return 'StopLimit';
-                case 4:
-                    return 'MarketOnOpen';
-                case 5:
-                    return 'MarketOnClose';
-                default:
-                    return '';
-            }
-        }
-
-        function getOrderDirection(id) {
-            switch (id) {
-                case 0:
-                    return 'Buy';
-                case 1:
-                    return 'Sell';
-                case 2:
-                    return 'Hold';
-                default:
-                    return '';
-            }
-        }
-
-        function getOrderStatus(id) {
-            switch (id) {
-                case 0:
-                    return 'New';
-                case 1:
-                    return 'Submitted';
-                case 2:
-                    return 'PartiallyFilled';
-                case 3:
-                    return 'Filled';
-                case 5:
-                    return 'Canceled';
-                case 6:
-                    return 'None';
-                case 7:
-                    return 'Invalid';
-                default:
-                    return '';
-            }
-        }
-
-
         //----------------------------------------------------------------
-        // Init
+        // Start
         //----------------------------------------------------------------
         $(function () {
 
@@ -759,9 +648,43 @@
         });
 
 
+        function buildStatistics() {
+            var stats = _data['Statistics'];
+            var i = 0;
+            var table = $('#statistics');
+            var tr = null;
+            $.each(stats, function (k, v) {
+                if (i % 2 == 0) {
+                    tr = $('<tr></tr>');
+                    table.append(tr);
+                }
+                i++;
+                tr.append('<td>' + k + '</td><td>' + v + '</td>');
+            });
+        }
+
+        function buildTradesList() {
+            var orders = _data['Orders'];
+            var tbody = $('#trades-table tbody');
+            $.each(orders, function (k, v) {
+                tr = $('<tr></tr>');
+                tr.append('<td>' + v.Time + '</td>');
+                tr.append('<td>' + v.Symbol.Value + '</td>');
+                tr.append('<td>' + v.Price + '</td>');
+                tr.append('<td>' + app.helpers.getOrderType(v.Type) + '</td>');
+                tr.append('<td>' + v.Quantity + '</td>');
+                tr.append('<td>' + app.helpersgetOrderDirection(v.Direction) + '</td>');
+                tr.append('<td>' + app.helpers.getOrderStatus(v.Status) + '</td>');
+                tr.append('<td>' + v.Tag + '</td>');
+                tbody.append(tr);
+            });
+        }
+
+
+
         //------------------------------------------------------------------
-        // Splitter
-        // https://github.com/jcubic/jquery.splitter
+        // Splitter plugin
+        // Origin: https://github.com/jcubic/jquery.splitter
         //------------------------------------------------------------------
         (function ($, undefined) {
             var count = 0;
