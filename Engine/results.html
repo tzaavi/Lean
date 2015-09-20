@@ -636,6 +636,7 @@
 						option.xAxis[0].max =  timeMax;
 						option.xAxis[0].scale = true;
 						
+						
 						console.log('optoin', option);
 
                         // config tooltip in needed
@@ -663,6 +664,11 @@
                         plot.echart.setOption(option);
                         app.echart.helpers.hackEchartToFixedDisplayIssues(plot.echart);
 						
+						console.log('xxx', plot.echart.component);
+						plot.echart.component.dataZoom.syncOption = function(){
+							console.log('sync option');
+						};
+						
 						var self = this;
 						plot.echart.on(echarts.config.EVENT.DATA_ZOOM, function(param, echart){	
 							console.log('DATA_ZOOM', param);
@@ -671,46 +677,29 @@
 							var zoomStart = param.zoom.start;
 							var zoomEnd = param.zoom.end;
 							
-							var newMin = moment(timeMin).add(10, 'days'); //moment(timeMin).add(totalTimeMiilis * (zoomStart / 100), 'ms');
+							var newMin = moment(timeMin).add(totalTimeMiilis * (zoomStart / 100), 'ms');
 							var newMax = moment(timeMin).add(totalTimeMiilis * (zoomEnd / 100), 'ms');
 							console.log('new min', newMin.format());
 							
 							for (var k = 0; k < self.plots.length; k++) {
 								self.plots[k].echart.setOption({
-									/*xAxis: [{
+									xAxis: [{
 											min: newMin.toDate(),
 											max: newMax.toDate()
-									}]*/
-								});
-							}
-							
-							echart.refresh();
-							
-							
-							/*newMax = moment('1000-01-01');
-							newMin = moment('9999-01-01');
-							console.log('echar series: ', echart._option.series[0].data[0]);
-							setTimeout(function(){
-								console.log('echar series 1000: ', echart._option.series[0].data[0]);
-
-								for (var k = 0; k < self.plots.length; k++) {
-								console.log('loop', k);
-								console.log('new min', echart._option.series[0].data[0][0]);
-								self.plots[k].echart.setOption({
-									xAxis: [{
-											min: echart._option.series[0].data[0][0],
-											max: newMax
 									}]
 								});
 							}
-							}, 1000);*/
+							
+					
+							
+						
 							
 							
 						});
 						
 						
-						plot.echart.on(echarts.config.EVENT.DATA_RANGE_SELECTED, function(param){
-							console.log('DATA_RANGE_SELECTED', param);
+						plot.echart.on(echarts.config.EVENT.REFRESH, function(param){
+							console.log('REFRESH', param);
 						})
 						
                     }
