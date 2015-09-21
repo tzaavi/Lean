@@ -314,6 +314,10 @@ namespace QuantConnect.Lean.Engine.Results
         /// <param name="value">Value of the daily performance.</param>
         public void SamplePerformance(DateTime time, decimal value)
         {
+            // remove utc timezone to mach other input date time in charts
+            // for some reason the last sample time contains time component, so i removed it also
+            time = new DateTime(time.Year, time.Month, time.Day);
+
             Sample("Strategy Equity", ChartType.Overlay, "Daily Performance", SeriesType.Bar, time, value, "%");
         }
 
@@ -325,6 +329,9 @@ namespace QuantConnect.Lean.Engine.Results
         /// <seealso cref="IResultHandler.Sample"/>
         public void SampleBenchmark(DateTime time, decimal value)
         {
+            // remove utc timezone to mach other input date time in charts
+            time = new DateTime(time.Ticks);
+
             Sample("Benchmark", ChartType.Stacked, "Benchmark", SeriesType.Line, time, value);
         }
 

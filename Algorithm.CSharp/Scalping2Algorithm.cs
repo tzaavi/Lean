@@ -18,7 +18,7 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             SetStartDate(2015, 08, 19);
-            SetEndDate(2015, 09, 08);
+            SetEndDate(2015, 08, 23);
             
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
@@ -99,7 +99,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void OnData(Ticks data)
         {
-            
+            var tick = data["EURUSD"][0];
+            var x1 = Convert.ToInt64(QuantConnect.Time.DateTimeToUnixTimeStamp(tick.Time.ToUniversalTime()));
+            var x2 = Convert.ToInt64(QuantConnect.Time.DateTimeToUnixTimeStamp(tick.Time));
         }
     }
 }

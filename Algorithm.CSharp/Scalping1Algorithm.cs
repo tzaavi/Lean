@@ -16,7 +16,7 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             SetStartDate(2015, 08, 19);
-            SetEndDate(2015, 08, 29);
+            SetEndDate(2015, 08, 19);
             
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
