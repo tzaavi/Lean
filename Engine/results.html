@@ -305,7 +305,12 @@
                             this.addPanelWithSeriesList([this.availableSeries[i]]);
                         }
                         if (this.availableSeries[i].name == 'Daily Performance') {
-                            this.addPanelWithSeriesList([this.availableSeries[i]]);
+							var d = this.availableSeries[i]
+							console.log('d', d);
+							for(var j = 0; j < d.data.length; j++){
+								console.log(moment.utc(d.data[j][0]))
+							}
+                            this.addPanelWithSeriesList([d]);
                         }
                     };
                 },
@@ -643,7 +648,7 @@
                         option.tooltip.showContent = true;
                         option.tooltip.transitionDuration = 0.4;
                         option.tooltip.formatter = function(params) {
-                            return moment.utc(params.data[0]).format('YYYY-MM-DD HH:mm:ss') + '<br/>'
+                            return moment(params.data[0]).format('YYYY-MM-DD HH:mm:ss') + '<br/>'
                                 + params.data[1];
                         }
 
@@ -689,12 +694,6 @@
 									}]
 								});
 							}
-							
-					
-							
-						
-							
-							
 						});
 						
 						
