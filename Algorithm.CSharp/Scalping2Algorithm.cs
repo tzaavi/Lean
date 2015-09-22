@@ -13,12 +13,14 @@ namespace QuantConnect.Algorithm.CSharp
         private ParabolicStopAndReverse sar;
         private MovingAverageConvergenceDivergence macd;
         private decimal stopLoss;
+        private int tradeCount = 0;
 
+        private DateTime lastOrderTime;
 
         public override void Initialize()
         {
             SetStartDate(2015, 08, 19);
-            SetEndDate(2015, 08, 23);
+            SetEndDate(2015, 09, 21);
             
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
@@ -66,6 +68,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 stopLoss = sar - 0.0001m;
                 Order("EURUSD", 10000);
+                lastOrderTime = bar.Time;
             }
         }
 
@@ -77,6 +80,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 stopLoss = sar + 0.0001m;
                 Order("EURUSD", -10000);
+                lastOrderTime = bar.Time;
             }
         }
 
@@ -85,6 +89,18 @@ namespace QuantConnect.Algorithm.CSharp
             var holding = Portfolio["EURUSD"];
 
             var pips = (holding.Price - holding.AveragePrice) * 10000;
+            
+            if ((bar.Time - lastOrderTime).TotalHours > 10 && pips > 0)
+            {
+                Liquidate();
+            }
+
+            if ((bar.Time - lastOrderTime).TotalHours > 20)
+            {
+                Liquidate();
+            }
+       
+            
 
             if (holding.IsLong && (pips > 20 || bar.Price < stopLoss))
             {
