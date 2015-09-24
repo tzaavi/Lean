@@ -19,11 +19,11 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
-            SetStartDate(2015, 08, 19);
-            SetEndDate(2015, 09, 21);
-            
+            SetStartDate(2015, 08, 2);
+            SetEndDate(2015, 08, 31);
 
-            AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "oanda", true, 0, false);
+
+            AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "dukascopy", true, 0, false);
 
             ema = EMA("EURUSD", 125);
             macd = MACD("EURUSD", 12, 26, 9);

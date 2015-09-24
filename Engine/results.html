@@ -640,13 +640,13 @@
                     for(var i = 0; i < this.plots.length; i++){
                         for(var j = 0; j < this.plots[i].series.length; j++){
                             series.push({
-                                //type: this.plots[i].series[j].type,
+                                type: this.plots[i].series[j].type,
                                 name: this.plots[i].series[j].name,
                                 data: this.plots[i].series[j].data,
                                 yAxis: i,
-                                /*dataGrouping: {
+                                dataGrouping: {
                                     units: groupingUnits
-                                }*/
+                                }
                             });
                         }
                     }
@@ -664,9 +664,11 @@
                 },
 
                 resizeAllPlots: function() {
-                    for (var i = 0; i < this.plots.length; i++) {
-                        this.plots[i].echart.resize();
-                    }
+                   var chart = $('#chart-wrapper').highcharts();
+                   var w = $('#chart-wrapper').width();
+                   var h = $('#chart-wrapper').height();
+                   console.log('redraw', w, h);
+                   chart.setSize(w, h);
                 }
             };
         })(app);
