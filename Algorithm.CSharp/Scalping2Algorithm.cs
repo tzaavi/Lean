@@ -8,6 +8,11 @@ using QuantConnect.Securities;
 namespace QuantConnect.Algorithm.CSharp
 {
     // http://www.dolphintrader.com/forex-scalping-strategy-parabolic-sar-advanced-macd-v3-indicator/
+
+    //todo: - dicide when to open position on tick not bar
+    //      - take in account spred 
+    //      - find out the best macd value to open position
+    //      - make the take profit dynamic (calcualted value)
     public class Scalping2Algorithm : QCAlgorithm
     {
         private ExponentialMovingAverage ema;
@@ -20,8 +25,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
-            SetStartDate(2015, 08, 2);
-            SetEndDate(2015, 08, 31);
+            SetStartDate(2015, 06, 1);
+            SetEndDate(2015, 06, 30);
 
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "dukascopy", true, 0, false);
@@ -75,7 +80,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             if (bar.Close > ema &&
                 bar.Close > sar &&
-                macd > 0.0002m)
+                macd > 0.0005m)
             {
                 stopLoss = sar - 0.0001m;
                 Order("EURUSD", 10000);
@@ -87,7 +92,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             if (bar.Close < ema &&
                 bar.Close < sar &&
-                macd < -0.0002m)
+                macd < -0.0005m)
             {
                 stopLoss = sar + 0.0001m;
                 Order("EURUSD", -10000);
