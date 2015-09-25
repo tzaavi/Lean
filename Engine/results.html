@@ -356,11 +356,16 @@
                                 name: key,
                                 type: 'scatter',
                                 data: []
-                            }
-                            series.symbol = 'triangle';
-                            series.symbolSize = 6;
+                            };
+							
+                            var symbol = 'triangle';
                             if (v.Direction == 1)
-                                series.symbolRotate = 180;
+								symbol = 'triangle-down';
+								
+							/*series.marker = {
+								symbol: symbol
+							};*/
+								
                             ordersSeries[key] = series;
                         }
 
@@ -368,7 +373,7 @@
                         if (time.indexOf('Z') == -1)
                             time += 'Z';
                         series.data.push([
-                            moment(time).toDate(),
+                            moment(time).valueOf(),
                             v.Price
                         ]);
                     });
@@ -447,7 +452,7 @@
                     case 2:
                         return 'line';
                     case 3:
-                        return 'column';
+                        return 'area'; // should be column but it has some issue render properly
                     default:
                         return 'line';
                     }
@@ -510,46 +515,6 @@
 
 
         //----------------------------------------------------------------
-        // Echart helpers
-        //----------------------------------------------------------------
-        (function (app) {
-            app.echart = {};
-            app.echart.helpers = {
-                hackEchartToFixedDisplayIssues: function (echart) {
-                    // hack this function to modify echart to display date correctly in cross mode
-                    var originalFuc = echart.component.tooltip._styleAxisPointer;
-                    echart.component.tooltip._styleAxisPointer = function (seriesArray, xStart, yStart, xEnd, yEnd, gap, x, y) {
-                        var self = echart.component.tooltip;
-                        originalFuc.apply(self, arguments);
-
-                        // calc y calue
-                        var yAxis = this.component.yAxis.getAxis(0);
-                        var coord = y;
-                        coord = coord < yAxis.grid.getY() ? yAxis.grid.getY() : coord;
-                        coord = coord > yAxis.grid.getYend() ? yAxis.grid.getYend() : coord;
-                        var yVal = (yAxis._max - (coord - yAxis.grid.getY()) / yAxis.grid.getHeight() * (yAxis._max - yAxis._min));
-
-                        // adjust decimal point base on max min diff
-                        if ((yAxis._max - yAxis._min) < 5) {
-                            yVal = yVal.toFixed(4) - 0;
-                        } else {
-                            yVal = yVal.toFixed(2) - 0;
-                        }
-
-                        // override text to changed display value
-                        self._axisCrossShape.style.text = ('( '
-                                + moment((this.component.xAxis.getAxis(0).getValueFromCoord(x))).format('YYYY-MM-DD HH:mm:ss')
-                                + ' , '
-                                + yVal
-                                + ' )'
-                        ).replace('  , ', ' ').replace(' ,  ', ' ');
-                    };
-                }
-            };
-        })(app);
-
-
-        //----------------------------------------------------------------
         // Chart Render
         //----------------------------------------------------------------
         (function(app) {
@@ -579,9 +544,9 @@
 
                         rangeSelector: {
                             buttons: [{
-                                type: 'minute',
+                                type: 'hour',
                                 count: 1,
-                                text: 'min'
+                                text: 'hour'
                             }, {
                                 type: 'day',
                                 count: 1,
@@ -639,15 +604,12 @@
                     var series = [];
                     for(var i = 0; i < this.plots.length; i++){
                         for(var j = 0; j < this.plots[i].series.length; j++){
-                            series.push({
-                                type: this.plots[i].series[j].type,
-                                name: this.plots[i].series[j].name,
-                                data: this.plots[i].series[j].data,
-                                yAxis: i,
-                                dataGrouping: {
-                                    units: groupingUnits
-                                }
-                            });
+							var s = this.plots[i].series[j];
+							s.yAxis = i;
+							s.dataGrouping = {
+								units: groupingUnits
+                            };
+							series.push(s);
                         }
                     }
                     
