@@ -49,6 +49,7 @@
     <Compile Include="DonchianChannel.cs" />
     <Compile Include="IchimokuKinkoHyo.cs" />
     <Compile Include="KeltnerChannels.cs" />
+    <Compile Include="LinearRegressionBullBear.cs" />
     <Compile Include="LogReturn.cs" />
     <Compile Include="OnBalanceVolume.cs" />
     <Compile Include="..\Common\Properties\SharedAssemblyInfo.cs">
@@ -92,6 +93,7 @@
     <Compile Include="WindowIndicator.cs" />
     <Compile Include="StandardDeviation.cs" />
     <Compile Include="BollingerBands.cs" />
+    <Compile Include="ZeroLagExponentialMovingAverage.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\QuantConnect.csproj">
