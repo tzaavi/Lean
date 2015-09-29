@@ -7,20 +7,18 @@ using QuantConnect.Securities;
 
 namespace QuantConnect.Algorithm.CSharp
 {
-    // http://www.dolphintrader.com/forex-scalping-strategy-parabolic-sar-advanced-macd-v3-indicator/
-
     //todo: - dicide when to open position on tick not bar
     //      - take in account spred 
-    //      - find out the best macd value to open position
+    //      - find out the best diff value to open position
     //      - make the take profit dynamic (calcualted value)
-    public class Scalping2Algorithm : QCAlgorithm
+    public class Scalping4Algorithm : QCAlgorithm
     {
-        private ExponentialMovingAverage ema;
+        private ExponentialMovingAverage emaLongTrend;
+        private ExponentialMovingAverage emaShortTrend;
+        private ExponentialMovingAverage emaPrice;
         private ParabolicStopAndReverse sar;
-        private MovingAverageConvergenceDivergence macd;
+        private Slope slope;
         private decimal stopLoss;
-        private int tradeCount = 0;
-
         private DateTime lastOrderTime;
 
         public override void Initialize()
@@ -31,12 +29,16 @@ namespace QuantConnect.Algorithm.CSharp
 
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Tick, "dukascopy", true, 0, false);
 
-            ema = EMA("EURUSD", 125, Resolution.Minute);
-            macd = MACD("EURUSD", 12, 26, 9, resolution: Resolution.Minute);
+            emaLongTrend = EMA("EURUSD", 200, Resolution.Minute);
+            emaShortTrend = EMA("EURUSD", 30, Resolution.Minute);
+            emaPrice = EMA("EURUSD", 10, Resolution.Minute);
             sar = PSAR("EURUSD", resolution: Resolution.Minute);
 
+            slope = new Slope(10, 10);
+            RegisterIndicator("EURUSD", slope, Resolution.Minute, x => x.Value);
 
-            var consolidator = new TickConsolidator(TimeSpan.FromMinutes(1));
+
+            var consolidator = new TickConsolidator(TimeSpan.FromMinutes(5));
             consolidator.DataConsolidated += OnMinute;
             SubscriptionManager.AddConsolidator("EURUSD", consolidator);
 
@@ -53,16 +55,17 @@ namespace QuantConnect.Algorithm.CSharp
                 HandleShortOpportunity(bar);
 
             if (sar.IsReady)
-                Plot("Price", "SAR", sar.Current);
+                Plot("SAR", sar.Current);
+
+            if(slope.IsReady)
+                Plot("slope", slope.Current);
 
             Plot("Price", "close", bar.Close);
-            Plot("Price", "EMA", ema.Current);
-            Plot("MACD", "Fast", macd.Fast);
-            Plot("MACD", "Slow", macd.Slow);
-            Plot("MACD", "Signal", macd.Signal);
-            Plot("MACD", "Current", macd.Current);
-            Plot("Balance", "Balance", Portfolio.TotalPortfolioValue);
-            Plot("Holding", "Holding", Portfolio["EURUSD"].Quantity);
+            Plot("Price", "emaLongTrend", emaLongTrend.Current);
+            Plot("Price", "emaShortTrend", emaShortTrend.Current);
+            Plot("Price", "emaPrice", emaPrice.Current);
+            Plot("Balance", Portfolio.TotalPortfolioValue);
+            Plot("Holding", Portfolio["EURUSD"].Quantity);
         }
 
         public void OnData(Ticks data)
@@ -78,9 +81,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void HandleLongOpportunity(TradeBar bar)
         {
-            if (bar.Close > ema &&
-                bar.Close > sar &&
-                macd > 0.0005m)
+            if (bar.Close > sar &&
+                emaPrice > emaShortTrend &&
+                slope * 10000 > 3m)
             {
                 stopLoss = sar - 0.0001m;
                 Order("EURUSD", 10000);
@@ -90,9 +93,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void HandleShortOpportunity(TradeBar bar)
         {
-            if (bar.Close < ema &&
-                bar.Close < sar &&
-                macd < -0.0005m)
+            if (bar.Close < sar &&
+                emaPrice < emaShortTrend &&
+                slope * 10000 < -3m)
             {
                 stopLoss = sar + 0.0001m;
                 Order("EURUSD", -10000);
@@ -116,12 +119,12 @@ namespace QuantConnect.Algorithm.CSharp
                 Liquidate();
             }
 
-            if (holding.IsLong && (pips > 20 || tick.Price < stopLoss))
+            if (holding.IsLong && (pips > 20 || tick.Price < stopLoss || (emaPrice < emaShortTrend && pips > 0)))
             {
                 Liquidate();
             }
 
-            if (holding.IsShort && (pips > 20 || tick.Price > stopLoss))
+            if (holding.IsShort && (pips > 20 || tick.Price > stopLoss || (emaPrice > emaShortTrend && pips > 0)))
             {
                 Liquidate();
             }
