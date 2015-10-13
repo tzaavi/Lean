@@ -16,9 +16,10 @@
 using System;
 using System.Collections.Generic;
 using NodaTime;
+using QuantConnect.Benchmarks;
 using QuantConnect.Brokerages;
 using QuantConnect.Data;
-using QuantConnect.Data.Fundamental;
+using QuantConnect.Data.UniverseSelection;
 using QuantConnect.Notifications;
 using QuantConnect.Orders;
 using QuantConnect.Scheduling;
@@ -105,6 +106,14 @@ namespace QuantConnect.Interfaces
         }
 
         /// <summary>
+        /// Gets whether or not this algorithm is still warming up
+        /// </summary>
+        bool IsWarmingUp
+        {
+            get;
+        }
+
+        /// <summary>
         /// Public name for the algorithm.
         /// </summary>
         /// <remarks>Not currently used but preserved for API integrity</remarks>
@@ -170,9 +179,9 @@ namespace QuantConnect.Interfaces
         }
 
         /// <summary>
-        /// Gets the current universe selector, or null if no selection is to be performed
+        /// Gets the list of universes for the algorithm
         /// </summary>
-        IUniverse Universe
+        List<IUniverse> Universes
         {
             get;
         }
@@ -230,7 +239,7 @@ namespace QuantConnect.Interfaces
         /// Gets the function used to define the benchmark. This function will return
         /// the value of the benchmark at a requested date/time
         /// </summary>
-        Func<DateTime, decimal> Benchmark
+        IBenchmark Benchmark
         { 
             get;
         }
@@ -399,6 +408,17 @@ namespace QuantConnect.Interfaces
         /// </summary>
         /// <param name="live">Bool live mode flag</param>
         void SetLiveMode(bool live);
+
+        /// <summary>
+        /// Sets <see cref="IsWarmingUp"/> to false to indicate this algorithm has finished its warm up
+        /// </summary>
+        void SetFinishedWarmingUp();
+
+        /// <summary>
+        /// Gets the date/time warmup should begin
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<HistoryRequest> GetWarmupHistoryRequests();
 
         /// <summary>
         /// Set the maximum number of orders the algortihm is allowed to process.

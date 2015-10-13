@@ -13,10 +13,13 @@
  * limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using NodaTime;
 using QuantConnect.Data;
+using QuantConnect.Packets;
+using HistoryRequest = QuantConnect.Data.HistoryRequest;
 
 namespace QuantConnect.Interfaces
 {
@@ -30,6 +33,13 @@ namespace QuantConnect.Interfaces
         /// Gets the total number of data points emitted by this history provider
         /// </summary>
         int DataPointCount { get; }
+
+        /// <summary>
+        /// Initializes this history provider to work for the specified job
+        /// </summary>
+        /// <param name="job">The job</param>
+        /// <param name="statusUpdate">Function used to send status updates</param>
+        void Initialize(AlgorithmNodePacket job, Action<int> statusUpdate);
 
         /// <summary>
         /// Gets the history for the requested securities

@@ -93,7 +93,6 @@
     <Compile Include="Common\Securities\SecurityExchangeHoursProviderTests.cs" />
     <Compile Include="Common\Securities\SecurityExchangeHoursTests.cs" />
     <Compile Include="Common\Securities\SecurityTransactionModelTests.cs" />
-    <Compile Include="Common\Securities\SymbolTests.cs" />
     <Compile Include="Common\SeriesTests.cs" />
     <Compile Include="Common\SymbolTests.cs" />
     <Compile Include="Common\Statistics\TradeStatisticsTests.cs" />
@@ -103,6 +102,7 @@
     <Compile Include="Common\TimeZoneOffsetProviderTests.cs" />
     <Compile Include="Common\TimeZonesTest.cs" />
     <Compile Include="Common\Util\BusyBlockingCollectionTests.cs" />
+    <Compile Include="Common\Util\MemoizingEnumerableTests.cs" />
     <Compile Include="Common\Util\ObjectActivatorTests.cs" />
     <Compile Include="Common\Util\ObjectToListJsonConverterTests.cs" />
     <Compile Include="Common\Util\VersionHelperTests.cs" />
@@ -118,6 +118,7 @@
     <Compile Include="Indicators\IchimokuKinkoHyoTests.cs" />
     <Compile Include="Indicators\KeltnerChannelsTests.cs" />
     <Compile Include="Indicators\LogReturnTests.cs" />
+    <Compile Include="Indicators\MomersionTests.cs" />
     <Compile Include="Indicators\OnBalanceVolumeTest.cs" />
     <Compile Include="Indicators\ParabolicStopAndReverseTests.cs" />
     <Compile Include="Indicators\WilliamsPercentRTests.cs" />

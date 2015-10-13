@@ -18,8 +18,8 @@ using System;
 using System.Collections.Generic;
 using NodaTime;
 using QuantConnect.Data;
-using QuantConnect.Data.Fundamental;
 using QuantConnect.Data.Market;
+using QuantConnect.Data.UniverseSelection;
 using QuantConnect.Securities;
 
 namespace QuantConnect.Lean.Engine.DataFeeds
@@ -150,26 +150,31 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                         // this is all the custom data
                         custom.Add(kvp);
                     }
+                    // don't add internal feed data to ticks/bars objects
                     if (baseData.DataType != MarketDataType.Auxiliary)
                     {
-                        // populate ticks and tradebars dictionaries with no aux data
-                        if (baseData.DataType == MarketDataType.Tick)
+                        if (!kvp.Key.SubscriptionDataConfig.IsInternalFeed)
                         {
-                            List<Tick> ticksList;
-                            if (!ticks.TryGetValue(symbol, out ticksList))
+                            // populate ticks and tradebars dictionaries with no aux data
+                            if (baseData.DataType == MarketDataType.Tick)
                             {
-                                ticksList = new List<Tick> {(Tick) baseData};
-                                ticks[symbol] = ticksList;
+                                List<Tick> ticksList;
+                                if (!ticks.TryGetValue(symbol, out ticksList))
+                                {
+                                    ticksList = new List<Tick> {(Tick) baseData};
+                                    ticks[symbol] = ticksList;
+                                }
+                                ticksList.Add((Tick) baseData);
                             }
-                            ticksList.Add((Tick) baseData);
-                        }
-                        else if (baseData.DataType == MarketDataType.TradeBar)
-                        {
-                            tradeBars[symbol] = (TradeBar) baseData;
+                            else if (baseData.DataType == MarketDataType.TradeBar)
+                            {
+                                tradeBars[symbol] = (TradeBar) baseData;
+                            }
+
+                            // this is data used to update consolidators
+                            consolidatorUpdate.Add(baseData);
                         }
 
-                        // this is data used to update consolidators
-                        consolidatorUpdate.Add(baseData);
                         // this is the data used set market prices
                         update = baseData;
                     }

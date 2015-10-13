@@ -414,7 +414,10 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
                     // add a blurb about TWS for connection refused errors
                     if (err.Message.Contains("Connection refused"))
                     {
-                        throw new Exception(err.Message + ". Be sure to logout of Trader Workstation. IB only allows one active log in at a time.", err);
+                        throw new Exception(err.Message + ". Be sure to logout of Trader Workstation. " +
+                            "IB only allows one active log in at a time. " +
+                            "This can also be caused by requiring two-factor authentication. " +
+                            "Be sure to disable this in IB Account Management > Security > SLS Opt out.", err);
                     }
 
                     throw;
@@ -613,16 +616,38 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
                 Log.Error("InteractiveBrokersBrokerage.GetUsdConversion(): Unable to resolve conversion for currency: " + currency);
                 return 1m;
             }
-            int ticker = GetNextTickerID();
-            decimal rate = 1m; 
-            var manualResetEvent = new ManualResetEvent(false);
-                
-            var priceTick = new Collection<IB.GenericTickType>();
 
-            // define and add our tick handler
+            // if this stays zero then we haven't received the conversion rate
+            var rate = 0m; 
+            var manualResetEvent = new ManualResetEvent(false);
+
+            // we're going to request both history and active ticks, we'll use the ticks first
+            // and if not present, we'll use the latest from the history request
+
+            var data = new List<IB.HistoricalDataEventArgs>();
+            int historicalTicker = GetNextTickerID();
+            var lastHistoricalData = DateTime.MaxValue;
+            EventHandler<IB.HistoricalDataEventArgs> clientOnHistoricalData = (sender, args) =>
+            {
+                if (args.RequestId == historicalTicker)
+                {
+                    data.Add(args);
+                    lastHistoricalData = DateTime.UtcNow;
+                }
+            };
+
+            _client.HistoricalData += clientOnHistoricalData;
+
+            // request some historical data, IB's api takes into account weekends/market opening hours
+            var requestSpan = TimeSpan.FromSeconds(100);
+            _client.RequestHistoricalData(historicalTicker, contract, DateTime.UtcNow, requestSpan, IB.BarSize.OneSecond, IB.HistoricalDataType.Ask, 0);
+
+            // define and add our tick handler for the ticks
+            var marketDataTicker = GetNextTickerID();
+            var priceTick = new Collection<IB.GenericTickType>();
             EventHandler<IB.TickPriceEventArgs> clientOnTickPrice = (sender, args) =>
             {
-                if (args.TickerId == ticker && args.TickType == IB.TickType.AskPrice)
+                if (args.TickerId == marketDataTicker && args.TickType == IB.TickType.AskPrice)
                 {
                     rate = args.Price;
                     manualResetEvent.Set();
@@ -631,9 +656,30 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
 
             _client.TickPrice += clientOnTickPrice;
 
-            _client.RequestMarketData(ticker, contract, priceTick, true, false);
+            _client.RequestMarketData(marketDataTicker, contract, priceTick, true, false);
 
             manualResetEvent.WaitOne(2500);
+
+            _client.TickPrice -= clientOnTickPrice;
+
+            // check to see if ticks returned something
+            if (rate == 0)
+            {
+                // history doesn't have a completed event, so we'll just wait for it to not have been called for a second
+                while (DateTime.UtcNow - lastHistoricalData < Time.OneSecond) Thread.Sleep(20);
+
+                // check for history
+                var ordered = data.OrderByDescending(x => x.Date);
+                var mostRecentQuote = ordered.FirstOrDefault();
+                if (mostRecentQuote == null)
+                {
+                    throw new Exception("Unable to get recent quote for " + currencyPair);
+                }
+                rate = mostRecentQuote.Close;
+            }
+
+            // be sure to unwire our history handler as well
+            _client.HistoricalData -= clientOnHistoricalData;
 
             if (inverted)
             {
@@ -1187,11 +1233,28 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
             return Interlocked.Increment(ref _nextClientID);
         }
 
-        private bool IsWithinScheduledServerResetTimes()
+        /// <summary>
+        /// This function is used to decide whether or not we should kill an algorithm
+        /// when we lose contact with IB servers. IB performs server resets nightly
+        /// and on Fridays they take everything down, so we'll prevent killing algos
+        /// on Saturdays completely for the time being.
+        /// </summary>
+        private static bool IsWithinScheduledServerResetTimes()
         {
-            // from 11:45 -> 12:45 is the IB reset times, we'll go from 11:30->1am for safety
-            var time = DateTime.Now.TimeOfDay;
-            var result = time > new TimeSpan(11, 30, 0) || time < new TimeSpan(1, 0, 0);
+            bool result;
+            var time = DateTime.UtcNow.ConvertFromUtc(TimeZones.NewYork);
+            
+            // don't kill algos on Saturdays if we don't have a connection
+            if (time.DayOfWeek == DayOfWeek.Saturday)
+            {
+                result = true;
+            }
+            else
+            {
+                var timeOfDay = time.TimeOfDay;
+                // from 11:45 -> 12:45 is the IB reset times, we'll go from 11:30->1am for safety
+                result = timeOfDay > new TimeSpan(11, 30, 0) || timeOfDay < new TimeSpan(1, 0, 0);
+            }
 
             Log.Trace("InteractiveBrokersBrokerage.IsWithinScheduledServerRestTimes(): " + result);
 
@@ -1200,12 +1263,12 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
 
         private DateTime GetBrokerTime()
         {
-            return DateTime.Now.Add(_brokerTimeDiff);
+            return DateTime.UtcNow.ConvertFromUtc(TimeZones.NewYork).Add(_brokerTimeDiff);
         }
         void HandleBrokerTime(object sender, IB.CurrentTimeEventArgs e)
         {
-            DateTime brokerTime = e.Time.ToLocalTime();
-            _brokerTimeDiff = brokerTime.Subtract(DateTime.Now);
+            // keep track of clock drift
+            _brokerTimeDiff = e.Time.Subtract(DateTime.UtcNow);
         }
         TimeSpan _brokerTimeDiff = new TimeSpan(0);
 
@@ -1279,6 +1342,11 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
             // new symbol to the permtick which won't be known by the algorithm
             tick.Symbol = new Symbol(symbol.Item2);
             tick.Time = GetBrokerTime();
+            if (symbol.Item1 == SecurityType.Forex)
+            {
+                // forex exchange hours are specified in UTC-05
+                tick.Time = tick.Time.ConvertTo(TimeZones.NewYork, TimeZones.EasternStandard);
+            }
             tick.Value = e.Price;
 
             if (e.Price <= 0 &&
@@ -1350,6 +1418,11 @@ namespace QuantConnect.Brokerages.InteractiveBrokers
             tick.Symbol = new Symbol(symbol.Item2);
             tick.Quantity = AdjustQuantity(symbol.Item1, e.Size);
             tick.Time = GetBrokerTime();
+            if (symbol.Item1 == SecurityType.Forex)
+            {
+                // forex exchange hours are specified in UTC-05
+                tick.Time = tick.Time.ConvertTo(TimeZones.NewYork, TimeZones.EasternStandard);
+            }
 
             if (tick.Quantity == 0) return;
 

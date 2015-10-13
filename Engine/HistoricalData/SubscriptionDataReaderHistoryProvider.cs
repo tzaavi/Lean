@@ -22,7 +22,7 @@ using System.Linq;
 using System.Threading;
 using NodaTime;
 using QuantConnect.Data;
-using QuantConnect.Data.Fundamental;
+using QuantConnect.Data.UniverseSelection;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Lean.Engine.Results;
@@ -50,6 +50,16 @@ namespace QuantConnect.Lean.Engine.HistoricalData
         public int DataPointCount
         {
             get { return _dataPointCount; }
+        }
+
+        /// <summary>
+        /// Initializes this history provider to work for the specified job
+        /// </summary>
+        /// <param name="job">The job</param>
+        /// <param name="statusUpdate">Function used to send status updates</param>
+        public void Initialize(AlgorithmNodePacket job, Action<int> statusUpdate)
+        {
+            // this implement doesn't need job data or to send status updates
         }
 
         /// <summary>
@@ -110,12 +120,23 @@ namespace QuantConnect.Lean.Engine.HistoricalData
                 reader = new FillForwardEnumerator(reader, security.Exchange, request.FillForwardResolution.Value.ToTimeSpan(), security.IsExtendedMarketHours, end, config.Increment);
             }
 
-            // this is needed to get the correct result from bar count based requests, don't permit data
-            // throw whose end time is equal to local start,which the subscription data reader does allow
-            // only apply this filter to non-tick subscriptions
-            reader = new FilterEnumerator<BaseData>(reader, data => config.Resolution == Resolution.Tick || data.EndTime > start);
+            // since the SubscriptionDataReader performs an any overlap condition on the trade bar's entire
+            // range (time->end time) we can end up passing the incorrect data (too far past, possibly future),
+            // so to combat this we deliberately filter the results from the data reader to fix these cases
+            // which only apply to non-tick data
 
-            return new Subscription(security, reader, start, end, false, false);
+            reader = new SubscriptionFilterEnumerator(reader, security, end);
+            reader = new FilterEnumerator<BaseData>(reader, data =>
+            {
+                // allow all ticks
+                if (config.Resolution == Resolution.Tick) return true;
+                // filter out future data
+                if (data.EndTime > end) return false;
+                // filter out data before the start
+                return data.EndTime > start;
+            });
+
+            return new Subscription(security, reader, start, end, false);
         }
 
         /// <summary>
@@ -164,7 +185,7 @@ namespace QuantConnect.Lean.Engine.HistoricalData
                 }
 
                 // end of subscriptions
-                if (earlyBirdTicks == long.MaxValue) yield break;
+                if (earlyBirdTicks == long.MaxValue) break;
 
                 if (data.Count != 0)
                 {
@@ -173,6 +194,12 @@ namespace QuantConnect.Lean.Engine.HistoricalData
                 }
 
                 frontier = new DateTime(Math.Max(earlyBirdTicks, frontier.Ticks), DateTimeKind.Utc);
+            }
+
+            // make sure we clean up after ourselves
+            foreach (var subscription in subscriptions)
+            {
+                subscription.Dispose();
             }
         }
 

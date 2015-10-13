@@ -131,13 +131,12 @@ namespace QuantConnect.Lean.Engine
             if (job.Version != Constants.Version || job.Redelivered)
             {
                 Log.Error("Engine.Run(): Job Version: " + job.Version + "  Deployed Version: " + Constants.Version + " Redelivered: " + job.Redelivered);
-
                 //Tiny chance there was an uncontrolled collapse of a server, resulting in an old user task circulating.
                 //In this event kill the old algorithm and leave a message so the user can later review.
-                leanEngineSystemHandlers.JobQueue.AcknowledgeJob(job);
                 leanEngineSystemHandlers.Api.SetAlgorithmStatus(job.AlgorithmId, AlgorithmStatus.RuntimeError, _collapseMessage);
                 leanEngineSystemHandlers.Notify.SetChannel(job.Channel);
                 leanEngineSystemHandlers.Notify.RuntimeError(job.AlgorithmId, _collapseMessage);
+                leanEngineSystemHandlers.JobQueue.AcknowledgeJob(job);
                 return;
             }
 
@@ -210,12 +209,24 @@ namespace QuantConnect.Lean.Engine
                 {
                     // Save algorithm to cache, load algorithm instance:
                     algorithm = _algorithmHandlers.Setup.CreateAlgorithmInstance(assemblyPath, job.Language);
-                    _algorithmHandlers.Results.SetAlgorithm(algorithm);
+
                     // set the history provider before setting up the algorithm
+                    _algorithmHandlers.HistoryProvider.Initialize(job, progress =>
+                    {
+                        // send progress updates to the result handler only during initialization
+                        if (!algorithm.GetLocked() || algorithm.IsWarmingUp)
+                        {
+                            _algorithmHandlers.Results.SendStatusUpdate(job.AlgorithmId, AlgorithmStatus.History, 
+                                string.Format("Processing history {0}%...", progress));
+                        }
+                    });
                     algorithm.HistoryProvider = _algorithmHandlers.HistoryProvider;
 
                     //Initialize the internal state of algorithm and job: executes the algorithm.Initialize() method.
                     initializeComplete = _algorithmHandlers.Setup.Setup(algorithm, out brokerage, job, _algorithmHandlers.Results, _algorithmHandlers.Transactions, _algorithmHandlers.RealTime);
+
+                    // set this again now that we've actually added securities
+                    _algorithmHandlers.Results.SetAlgorithm(algorithm);
 
                     //If there are any reasons it failed, pass these back to the IDE.
                     if (!initializeComplete || algorithm.ErrorMessages.Count > 0 || _algorithmHandlers.Setup.Errors.Count > 0)

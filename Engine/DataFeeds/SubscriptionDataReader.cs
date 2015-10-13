@@ -20,9 +20,9 @@ using System.Collections.Generic;
 using System.Linq;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
+using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.Custom;
 using QuantConnect.Data.Market;
-using QuantConnect.Lean.Engine.DataFeeds.Auxiliary;
 using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Logging;
 using QuantConnect.Util;
@@ -168,19 +168,19 @@ namespace QuantConnect.Lean.Engine.DataFeeds
             }
 
             //Load the entire factor and symbol mapping tables into memory, we'll start with some defaults
-            _factorFile = new FactorFile(config.Symbol.SID, new List<FactorFileRow>());
-            _mapFile = new MapFile(config.Symbol.SID, new List<MapFileRow>());
+            _factorFile = new FactorFile(config.Symbol.Permtick, new List<FactorFileRow>());
+            _mapFile = new MapFile(config.Symbol.Permtick, new List<MapFileRow>());
             try
             {
                 // do we have map/factor tables? -- only applies to equities
                 if (!_config.IsCustomData && _config.SecurityType == SecurityType.Equity)
                 {
                     // resolve the correct map file as of the date
-                    _mapFile = MapFile.Read(config.Symbol.SID, config.Market);
+                    _mapFile = MapFile.Read(config.Symbol.Permtick, config.Market);
                     _hasScaleFactors = FactorFile.HasScalingFactors(_mapFile.Permtick, config.Market);
                     if (_hasScaleFactors)
                     {
-                        _factorFile = FactorFile.Read(config.Symbol.SID, config.Market);
+                        _factorFile = FactorFile.Read(config.Symbol.Permtick, config.Market);
                     }
                 }
             }
@@ -273,9 +273,15 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                     // as updating factors and symbol mapping as well as detecting aux data
                     if (instance.EndTime.Date > _tradeableDates.Current)
                     {
-                        // this will advance the date enumerator and determine if a new
-                        // instance of the subscription enumerator is required
-                        _subscriptionFactoryEnumerator = ResolveDataEnumerator(false);
+                        // this is fairly hacky and could be solved by removing the aux data from this class
+                        // the case is with coarse data files which have many daily sized data points for the
+                        // same date,
+                        if (!_config.IsInternalFeed)
+                        {
+                            // this will advance the date enumerator and determine if a new
+                            // instance of the subscription enumerator is required
+                            _subscriptionFactoryEnumerator = ResolveDataEnumerator(false);
+                        }
 
                         // we produce auxiliary data on date changes, but make sure our current instance
                         // isn't before it in time
