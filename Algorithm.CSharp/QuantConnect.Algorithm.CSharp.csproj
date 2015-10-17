@@ -70,6 +70,8 @@
     <Compile Include="Scalping4Algorithm.cs" />
     <Compile Include="Scalping3Algorithm.cs" />
     <Compile Include="OpeningBreakoutAlgorithm.cs" />
+    <Compile Include="MeanReversion1Algorithm.cs" />
+    <Compile Include="TrendFollowingAlgorithm.cs" />
     <Compile Include="WarmupAlgorithm.cs" />
     <Compile Include="WarmupHistoryAlgorithm.cs" />
     <Compile Include="MACDTrendAlgorithm.cs" />

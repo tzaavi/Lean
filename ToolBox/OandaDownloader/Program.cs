@@ -31,8 +31,8 @@ namespace QuantConnect.OandaDownloader
 {
     class Program
     {
-        private const string ConfigFileName = "config.json";
-        private const string InstrumentsFileName = "instruments.txt";
+        private const string ConfigFileName = "OandaDownloader\\config.json";
+        private const string InstrumentsFileName = "OandaDownloader\\instruments.txt";
         private const string EndOfLine = "\r\n";
 
         private static ConfigSettings _settings;
