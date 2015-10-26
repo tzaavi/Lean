@@ -22,7 +22,7 @@ namespace QuantConnect.Securities.Forex
     /// <summary>
     /// The equity portfolio model implementation is the same as the default
     /// </summary>
-    public class ForexPortfolioModel : SecurityPortfolioModel
+    public class  ForexPortfolioModel : SecurityPortfolioModel
     {
         /// <summary>
         /// Performs application of an OrderEvent to the portfolio

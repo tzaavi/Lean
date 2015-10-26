@@ -428,7 +428,15 @@ namespace QuantConnect.Lean.Engine.Results
             var templateHtmlFile = "../../results.html";
 
             var charts = new Dictionary<string, Chart>(Charts);
-            var result = new BacktestResult(charts, orders, profitLoss, statisticsResults.Summary, new Dictionary<string, AlgorithmPerformance>());
+
+            var result = new
+            {
+                Charts = charts,
+                Orders = orders,
+                Statistics = statisticsResults.Summary,
+                TotalPerformance = statisticsResults.TotalPerformance
+            };
+
             var serialized = JsonConvert.SerializeObject(result);
 
             var html = File.ReadAllText(templateHtmlFile);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NodaTime;
 using QuantConnect.Data.Consolidators;
 using QuantConnect.Data.Market;
 using QuantConnect.Indicators;
@@ -25,8 +26,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
-            SetStartDate(2015, 01, 1);
-            SetEndDate(2015, 09, 30);
+            SetStartDate(2014, 1, 1);
+            SetEndDate(2014, 2, 1);
+            SetTimeZone(DateTimeZone.Utc);
 
             // securities
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Minute, "oanda", true, 0, false);
@@ -47,6 +49,9 @@ namespace QuantConnect.Algorithm.CSharp
             var consolidatorShort = new TradeBarConsolidator(TimeSpan.FromMinutes(1));
             consolidatorShort.DataConsolidated += OnShortTimePertiodData;
             SubscriptionManager.AddConsolidator("EURUSD", consolidatorShort);
+
+            // setup charts
+            AddChart(new Chart("Price", ChartType.Overlay));
         }
 
         public void OnShortTimePertiodData(Object o, TradeBar bar)
@@ -124,11 +129,11 @@ namespace QuantConnect.Algorithm.CSharp
             lastEmaTrendFast = emaTrendFast.Current;
 
             // plots
-            Plot("close", bar.Close);
-            Plot("emaFastTrend", emaTrendFast.Current);
-            Plot("emaSlowTrend", emaTrendSlow.Current);
+            Plot("Price", "close", bar.Close);
+            Plot("Price", "emaFastTrend", emaTrendFast.Current);
+            Plot("Price", "emaSlowTrend", emaTrendSlow.Current);
             if (stop > 0)
-                Plot("stop", stop);
+                Plot("Price", "stop", stop);
         }
 
         private void SaveBar(TradeBar bar)
