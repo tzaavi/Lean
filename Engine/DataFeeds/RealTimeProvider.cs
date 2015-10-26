@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  * 
@@ -11,32 +11,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
 */
 
-using System.Collections.Generic;
+using System;
 
-namespace QuantConnect.Data.UniverseSelection
+namespace QuantConnect.Lean.Engine.DataFeeds
 {
     /// <summary>
-    /// Provides a mechanism for an algorithm to select a universe of symbols to operate on
+    /// Provides an implementation of <see cref="ITimeProvider"/> that
+    /// uses <see cref="DateTime.UtcNow"/> to provide the current time
     /// </summary>
-    public interface IUniverse
+    public sealed class RealTimeProvider : ITimeProvider
     {
         /// <summary>
-        /// Gets the settings used for subscriptons added for this universe
+        /// Gets the current time in UTC
         /// </summary>
-        SubscriptionSettings SubscriptionSettings { get; }
-
-        /// <summary>
-        /// Gets the configuration used to get universe data
-        /// </summary>
-        SubscriptionDataConfig Configuration { get; }
-
-        /// <summary>
-        /// Performs an initial, coarse filter
-        /// </summary>
-        /// <param name="data">The coarse fundamental data</param>
-        /// <returns>The data that passes the filter</returns>
-        IEnumerable<Symbol> SelectSymbols(IEnumerable<BaseData> data);
+        /// <returns>The current time in UTC</returns>
+        public DateTime GetUtcNow()
+        {
+            return DateTime.UtcNow;
+        }
     }
 }

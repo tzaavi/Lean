@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using QuantConnect.Securities;
+using QuantConnect.Util;
 
 namespace QuantConnect.Data.UniverseSelection
 {
@@ -29,27 +30,58 @@ namespace QuantConnect.Data.UniverseSelection
         /// </summary>
         public static readonly SecurityChanges None = new SecurityChanges(new List<Security>(), new List<Security>());
 
+        private readonly HashSet<Security> _addedSecurities;
+        private readonly HashSet<Security> _removedSecurities;
+
         /// <summary>
         /// Gets the symbols that were added by universe selection
         /// </summary>
-        public IReadOnlyList<Security> AddedSecurities { get; private set; }
+        public IReadOnlyList<Security> AddedSecurities
+        {
+            get { return _addedSecurities.ToList(); }
+        }
 
         /// <summary>
         /// Gets the symbols that were removed by universe selection. This list may
         /// include symbols that were removed, but are still receiving data due to
         /// existing holdings or open orders
         /// </summary>
-        public IReadOnlyList<Security> RemovedSecurities { get; private set; }
+        public IReadOnlyList<Security> RemovedSecurities
+        {
+            get { return _removedSecurities.ToList(); }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SecurityChanges"/> class
         /// </summary>
         /// <param name="addedSecurities">Added symbols list</param>
         /// <param name="removedSecurities">Removed symbols list</param>
-        public SecurityChanges(IReadOnlyList<Security> addedSecurities, IReadOnlyList<Security> removedSecurities)
+        public SecurityChanges(IEnumerable<Security> addedSecurities, IEnumerable<Security> removedSecurities)
         {
-            AddedSecurities = addedSecurities;
-            RemovedSecurities = removedSecurities;
+            _addedSecurities = addedSecurities.ToHashSet();
+            _removedSecurities = removedSecurities.ToHashSet();
+        }
+
+        /// <summary>
+        /// Returns a new instance of <see cref="SecurityChanges"/> with the specified securities marked as added
+        /// </summary>
+        /// <param name="securities">The added securities</param>
+        /// <returns>A new security changes instance with the specified securities marked as added</returns>
+        public static SecurityChanges Added(params Security[] securities)
+        {
+            if (securities == null || securities.Length == 0) return None;
+            return new SecurityChanges(securities.ToList(), new List<Security>());
+        }
+
+        /// <summary>
+        /// Returns a new instance of <see cref="SecurityChanges"/> with the specified securities marked as removed
+        /// </summary>
+        /// <param name="securities">The removed securities</param>
+        /// <returns>A new security changes instance with the specified securities marked as removed</returns>
+        public static SecurityChanges Removed(params Security[] securities)
+        {
+            if (securities == null || securities.Length == 0) return None;
+            return new SecurityChanges(new List<Security>(), securities.ToList());
         }
 
         /// <summary>
