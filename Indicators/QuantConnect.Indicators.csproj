@@ -50,6 +50,7 @@
     <Compile Include="IchimokuKinkoHyo.cs" />
     <Compile Include="KeltnerChannels.cs" />
     <Compile Include="LinearRegressionBullBear.cs" />
+    <Compile Include="LeastSquaresMovingAverage.cs" />
     <Compile Include="LogReturn.cs" />
     <Compile Include="Momersion.cs" />
     <Compile Include="OnBalanceVolume.cs" />

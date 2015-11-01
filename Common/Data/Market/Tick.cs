@@ -32,7 +32,7 @@ namespace QuantConnect.Data.Market
         public TickType TickType = TickType.Trade;
 
         /// <summary>
-        /// Quantity of the tick sale or quote offer.
+        /// Quantity exchanged in a trade.
         /// </summary>
         public int Quantity = 0;
 
@@ -74,6 +74,16 @@ namespace QuantConnect.Data.Market
             }
         }
 
+        /// <summary>
+        /// Size of bid quote.
+        /// </summary>
+        public long BidSize = 0;
+
+        /// <summary>
+        /// Size of ask quote.
+        /// </summary>
+        public long AskSize = 0;
+
         //In Base Class: Alias of Closing:
         //public decimal Price;
 
@@ -97,6 +107,8 @@ namespace QuantConnect.Data.Market
             Exchange = "";
             SaleCondition = "";
             Suspicious = false;
+            BidSize = 0;
+            AskSize = 0;
         }
 
         /// <summary>
@@ -115,6 +127,8 @@ namespace QuantConnect.Data.Market
             Quantity = original.Quantity;
             Suspicious = original.Suspicious;
             DataType = MarketDataType.Tick;
+            BidSize = original.BidSize;
+            AskSize = original.AskSize;
         }
 
         /// <summary>
@@ -302,11 +316,15 @@ namespace QuantConnect.Data.Market
         /// <param name="bidPrice">Current bid price</param>
         /// <param name="askPrice">Current asking price</param>
         /// <param name="volume">Volume of this trade</param>
-        public override void Update(decimal lastTrade, decimal bidPrice, decimal askPrice, decimal volume)
+        /// <param name="bidSize">The size of the current bid, if available</param>
+        /// <param name="askSize">The size of the current ask, if available</param>
+        public override void Update(decimal lastTrade, decimal bidPrice, decimal askPrice, decimal volume, decimal bidSize, decimal askSize)
         {
             Value = lastTrade;
             BidPrice = bidPrice;
             AskPrice = askPrice;
+            BidSize = (long) bidSize;
+            AskSize = (long) askSize;
             Quantity = Convert.ToInt32(volume);
         }
 
@@ -316,8 +334,8 @@ namespace QuantConnect.Data.Market
         public bool IsValid()
         {
             return (TickType == TickType.Trade && LastPrice > 0.0m && Quantity > 0) ||
-                   (TickType == TickType.Quote && AskPrice > 0.0m && Quantity > 0) ||
-                   (TickType == TickType.Quote && BidPrice > 0.0m && Quantity > 0);
+                   (TickType == TickType.Quote && AskPrice > 0.0m && AskSize > 0) ||
+                   (TickType == TickType.Quote && BidPrice > 0.0m && BidSize > 0);
         }
 
         /// <summary>

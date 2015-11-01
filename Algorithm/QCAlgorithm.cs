@@ -165,7 +165,17 @@ namespace QuantConnect.Algorithm
         /// </summary>
         public IBrokerageModel BrokerageModel
         {
-            get; 
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets the brokerage message handler used to decide what to do
+        /// with each message sent from the brokerage
+        /// </summary>
+        public IBrokerageMessageHandler BrokerageMessageHandler
+        {
+            get;
             set;
         }
 
@@ -664,6 +674,7 @@ namespace QuantConnect.Algorithm
                 case BrokerageName.Default:
                     BrokerageModel = new DefaultBrokerageModel();
                     break;
+
                 case BrokerageName.InteractiveBrokersBrokerage:
                     BrokerageModel = new InteractiveBrokersBrokerageModel();
                     break;
@@ -672,9 +683,34 @@ namespace QuantConnect.Algorithm
                     BrokerageModel = new TradierBrokerageModel();
                     break;
 
+                case BrokerageName.OandaBrokerage:
+                    BrokerageModel = new OandaBrokerageModel();
+                    break;
+
+                case BrokerageName.FxcmBrokerage:
+                    BrokerageModel = new FxcmBrokerageModel();
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException("brokerage", brokerage, null);
             }
+        }
+
+        /// <summary>
+        /// Sets the implementation used to handle messages from the brokerage.
+        /// The default implementation will forward messages to debug or error
+        /// and when a <see cref="BrokerageMessageType.Error"/> ocurrs, the algorithm
+        /// is stopped.
+        /// </summary>
+        /// <param name="handler">The message handler to use</param>
+        public void SetBrokerageMessageHandler(IBrokerageMessageHandler handler)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException("handler");
+            }
+
+            BrokerageMessageHandler = handler;
         }
 
         /// <summary>

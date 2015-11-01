@@ -121,8 +121,12 @@
     <Compile Include="Benchmarks\SecurityBenchmark.cs" />
     <Compile Include="Brokerages\BrokerageName.cs" />
     <Compile Include="Brokerages\DefaultBrokerageModel.cs" />
+    <Compile Include="Brokerages\FxcmBrokerageModel.cs" />
+    <Compile Include="Brokerages\FxcmTransactionModel.cs" />
+    <Compile Include="Brokerages\IBrokerageMessageHandler.cs" />
     <Compile Include="Brokerages\IBrokerageModel.cs" />
     <Compile Include="Brokerages\InteractiveBrokersBrokerageModel.cs" />
+    <Compile Include="Brokerages\OandaBrokerageModel.cs" />
     <Compile Include="Brokerages\TradierBrokerageModel.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Data\Auxiliary\FactorFile.cs" />
@@ -137,11 +141,14 @@
     <Compile Include="Data\Consolidators\TradeBarConsolidatorBase.cs" />
     <Compile Include="Data\FileFormat.cs" />
     <Compile Include="Data\HistoryRequest.cs" />
+    <Compile Include="Data\Market\Bar.cs" />
     <Compile Include="Data\Market\DataDictionary.cs" />
     <Compile Include="Data\Market\Delisting.cs" />
     <Compile Include="Data\Market\Delistings.cs" />
     <Compile Include="Data\Market\Dividend.cs" />
     <Compile Include="Data\Market\Dividends.cs" />
+    <Compile Include="Data\Market\IBar.cs" />
+    <Compile Include="Data\Market\QuoteBar.cs" />
     <Compile Include="Data\Market\RenkoBar.cs" />
     <Compile Include="Brokerages\BrokerageMessageEvent.cs" />
     <Compile Include="Brokerages\BrokerageMessageType.cs" />
