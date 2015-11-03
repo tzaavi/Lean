@@ -21,15 +21,13 @@ using System.Threading;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.Lean.Engine;
-using QuantConnect.Logging;
-using QuantConnect.Api;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Engine.DataFeeds;
 
 namespace QuantConnect.Tests.Engine
 {
-    [TestFixture]
+    [TestFixture, Category("TravisExclude")]
     public class DefaultBrokerageMessageHandlerTests
     {
         [Test]
@@ -40,13 +38,13 @@ namespace QuantConnect.Tests.Engine
             var job = new LiveNodePacket();
             var results = new TestResultHandler();//packet => Console.WriteLine(FieldsToString(packet)));
             var api = new Api.Api();
-            var handler = new DefaultBrokerageMessageHandler(algorithm, job, results, api, TimeSpan.Zero);
+            var handler = new DefaultBrokerageMessageHandler(algorithm, job, results, api, TimeSpan.Zero, TimeSpan.Zero);
 
             Assert.IsNull(algorithm.RunTimeError);
 
             handler.Handle(BrokerageMessageEvent.Disconnected("Disconnection!"));
 
-            Thread.Sleep(50);
+            Thread.Sleep(100);
 
             Assert.IsNotNull(algorithm.RunTimeError);
 
@@ -85,7 +83,7 @@ namespace QuantConnect.Tests.Engine
             var job = new LiveNodePacket();
             var results = new TestResultHandler();//packet => Console.WriteLine(FieldsToString(packet)));
             var api = new Api.Api();
-            var handler = new DefaultBrokerageMessageHandler(algorithm, job, results, api, TimeSpan.FromMinutes(15), TimeSpan.FromSeconds(.25));
+            var handler = new DefaultBrokerageMessageHandler(algorithm, job, results, api, TimeSpan.Zero, TimeSpan.FromSeconds(.75));
 
             Assert.IsNull(algorithm.RunTimeError);
 
