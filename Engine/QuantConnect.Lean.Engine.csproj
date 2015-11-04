@@ -293,8 +293,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="results1.html" />
     <Content Include="results.html" />
+    <Content Include="results2.html" />
     <Content Include="results-old.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
