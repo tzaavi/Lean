@@ -527,12 +527,19 @@
                     var tradesEntry = {
                         name: 'Trade',
                         type: 'scatter',
-                        data: []
+                        data: [],
+                        tooltip: {
+                            //headerFormat: '<b>Open</b><br>',
+                            pointFormat: 'Time: {point.x} <br>Price: {point.y} <br> Direction: {point.direction} <br> Quantity: {point.quantity}',
+                            formatter: function (){ return 'Time: ' + moment(this.x).format() }
+                        }
                     };
                     tradesEntry.data = $.map(_data["TotalPerformance"]["ClosedTrades"], function (t) {
                         return {
                             x: moment(t.EntryTime).toDate(),
-                            y: t.EntryPrice
+                            y: t.EntryPrice,
+                            direction: app.helpers.getOrderDirection(t.Direction),
+                            quantity: t.Quantity
                         }
                     });
 
@@ -544,9 +551,12 @@
                     tradesExit.data = $.map(_data["TotalPerformance"]["ClosedTrades"], function (t) {
                         return {
                             x: moment(t.ExitTime).toDate(),
-                            y: t.ExitPrice
+                            y: t.ExitPrice,
+
                         }
                     });
+
+                    
 
                     var chart = $('#chart-wrapper').highcharts();
                     this.tradeMarkerSeries.push(chart.addSeries(tradesEntry));
