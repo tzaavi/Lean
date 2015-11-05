@@ -129,7 +129,10 @@ namespace QuantConnect.Algorithm.CSharp
             lastEmaTrendFast = emaTrendFast.Current;
 
             // plots
-            Plot("Price", "close", bar.Close);
+            Plot("Price", "Close", bar.Close);
+            Plot("Price", "Open", bar.Open);
+            Plot("Price", "Low", bar.Low);
+            Plot("Price", "High", bar.High);
             Plot("Price", "emaFastTrend", emaTrendFast.Current);
             Plot("Price", "emaSlowTrend", emaTrendSlow.Current);
             if (stop > 0)
