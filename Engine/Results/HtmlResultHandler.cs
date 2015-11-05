@@ -609,6 +609,7 @@ namespace QuantConnect.Lean.Engine.Results
         {
             var time = _algorithm.Time;
 
+
             if (time > _nextSample || forceProcess)
             {
                 //Set next sample time: 4000 samples per backtest

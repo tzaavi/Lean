@@ -22,13 +22,13 @@ namespace QuantConnect.Algorithm.CSharp
         private bool isLongSetup;
         private bool isShortSetup;
 
-        private List<TradeBar> lastBars = new List<TradeBar>(); 
+        private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3); 
 
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);
             SetEndDate(2014, 2, 1);
-            SetTimeZone(DateTimeZone.Utc);
+            
 
             // securities
             AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Minute, "oanda", true, 0, false);
@@ -58,7 +58,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             if (!Portfolio.Invested)
             {
-                if (isLongSetup && bar.Close < lastBars[0].Close - 0.5m*lastAtr)
+                if (isLongSetup && bar.Close < lastBars[0].Close - 0.5m * lastAtr)
                 {
                     stop = bar.Close - 0.0005m;
                     target = bar.Close + 0.002m;
@@ -97,10 +97,9 @@ namespace QuantConnect.Algorithm.CSharp
             emaTrendFast.Update(new IndicatorDataPoint(bar.Symbol, bar.EndTime, bar.Value));
             emaTrendSlow.Update(new IndicatorDataPoint(bar.Symbol, bar.EndTime, bar.Value));
             atr.Update(bar);
-                
-
+            
             // cheack if we have every thing to run strategy
-            if (emaTrendSlow > 0 && lastEmaTrendSlow > 0)
+            if (emaTrendSlow > 0 && lastEmaTrendSlow > 0 && lastBars.IsReady)
             {
                 // check long setup
                 isLongSetup =
@@ -123,7 +122,7 @@ namespace QuantConnect.Algorithm.CSharp
 
 
             // save values for later use
-            SaveBar(bar);
+            lastBars.Add(bar);
             lastAtr = atr.Current;
             lastEmaTrendSlow = emaTrendSlow.Current;
             lastEmaTrendFast = emaTrendFast.Current;
@@ -137,13 +136,6 @@ namespace QuantConnect.Algorithm.CSharp
             Plot("Price", "emaSlowTrend", emaTrendSlow.Current);
             if (stop > 0)
                 Plot("Price", "stop", stop);
-        }
-
-        private void SaveBar(TradeBar bar)
-        {
-            lastBars.Insert(0, bar);
-            if(lastBars.Count > 3)
-                lastBars.RemoveAt(lastBars.Count - 1);
         }
     }
 }
