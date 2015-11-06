@@ -22,7 +22,8 @@ namespace QuantConnect.Algorithm.CSharp
         private bool isLongSetup;
         private bool isShortSetup;
 
-        private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3); 
+        private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3);
+        private decimal lastShortClose;
 
         public override void Initialize()
         {
@@ -56,39 +57,60 @@ namespace QuantConnect.Algorithm.CSharp
 
         public void OnShortTimePertiodData(Object o, TradeBar bar)
         {
+            // open trade
             if (!Portfolio.Invested)
             {
-                if (isLongSetup && bar.Close < lastBars[0].Close - 0.5m * lastAtr)
+                if (isLongSetup && bar.Close > lastBars[0].Low && lastShortClose < lastBars[0].Low)
                 {
-                    stop = bar.Close - 0.0005m;
+                    stop = bar.Close - 0.001m;
                     target = bar.Close + 0.002m;
                     Order("EURUSD", 10000);
                 }
 
-                if (isShortSetup && bar.Close > lastBars[0].Close + 0.5m * lastAtr)
+                if (isShortSetup && bar.Close < lastBars[0].High && lastShortClose > lastBars[0].High)
                 {
-                    stop = bar.Close + 0.0005m;
+                    stop = bar.Close + 0.001m;
                     target = bar.Close - 0.002m;
                     Order("EURUSD", -10000);
                 }
             }
 
 
+            //update stops
             if (Portfolio.Invested)
             {
                 var holding = Portfolio["EURUSD"];
 
-                if (holding.IsLong && (bar.Close < stop || bar.Close > target))
+                if (holding.IsLong && (bar.Close - 0.001m) > stop)
+                {
+                    stop = bar.Close - 0.001m;
+                }
+
+                if (holding.IsShort && (bar.Close + 0.001m) < stop)
+                {
+                    stop = bar.Close + 0.001m;
+                }
+            }
+
+
+            // close trade
+            if (Portfolio.Invested)
+            {
+                var holding = Portfolio["EURUSD"];
+
+                if (holding.IsLong && (bar.Close < stop))
                 {
                     Liquidate();
                 }
 
-                if (holding.IsShort && (bar.Close > stop || bar.Close < target))
+                if (holding.IsShort && (bar.Close > stop))
                 {
                     Liquidate();
                 }
             }
-            
+
+            lastShortClose = bar.Close;
+
         }
 
         public void OnLongTimePertiodData(Object o, TradeBar bar)
@@ -107,7 +129,11 @@ namespace QuantConnect.Algorithm.CSharp
                     bar.Close < lastEmaTrendFast &&
                     bar.Low < lastBars[0].Low &&
                     lastBars[0].Low < lastBars[1].Low &&
-                    lastBars[1].Low < lastBars[2].Low;
+                    lastBars[1].Low < lastBars[2].Low &&
+
+                    bar.Close < lastBars[0].Close &&
+                    lastBars[0].Close < lastBars[1].Close &&
+                    lastBars[1].Close < lastBars[2].Close;
 
 
                 // check short setup
@@ -116,7 +142,11 @@ namespace QuantConnect.Algorithm.CSharp
                     bar.Close > lastEmaTrendFast &&
                     bar.High > lastBars[0].High &&
                     lastBars[0].High > lastBars[1].High &&
-                    lastBars[1].High > lastBars[2].High;
+                    lastBars[1].High > lastBars[2].High &&
+
+                    bar.Close > lastBars[0].Close &&
+                    lastBars[0].Close > lastBars[1].Close &&
+                    lastBars[1].Close > lastBars[2].Close;
 
             }
 
