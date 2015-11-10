@@ -55,7 +55,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>QuantConnect.Lean.Engine.Engine</StartupObject>
+    <StartupObject>QuantConnect.Lean.Engine.OptimizationEngine</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -184,6 +184,7 @@
     <Compile Include="HistoricalData\SubscriptionDataReaderHistoryProvider.cs" />
     <Compile Include="LeanEngineAlgorithmHandlers.cs" />
     <Compile Include="LeanEngineSystemHandlers.cs" />
+    <Compile Include="OptimizationEngine.cs" />
     <Compile Include="RealTime\LiveTradingRealTimeHandler.cs" />
     <Compile Include="RealTime\BacktestingRealTimeHandler.cs" />
     <Compile Include="RealTime\IRealTimeHandler.cs" />
