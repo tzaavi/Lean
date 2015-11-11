@@ -55,7 +55,7 @@ namespace QuantConnect.Lean.Engine.Results
         private readonly Dictionary<string, List<string>> _equityResults;
 
 
-        public Dictionary<string, string> FinalStatistics { get; private set; }
+        public StatisticsResults StatisticsResults { get; private set; }
 
         /// <summary>
         /// Messaging to store notification messages for processing.
@@ -133,7 +133,6 @@ namespace QuantConnect.Lean.Engine.Results
         {
             Messages = new ConcurrentQueue<Packet>();
             Charts = new ConcurrentDictionary<string, Chart>();
-            FinalStatistics = new Dictionary<string, string>();
             _chartLock = new Object();
             _isActive = true;
             _notificationPeriod = TimeSpan.FromSeconds(5);
@@ -428,7 +427,7 @@ namespace QuantConnect.Lean.Engine.Results
                 //Console.WriteLine(string.Format("statistics.Add(\"{0}\",\"{1}\");", pair.Key, pair.Value));
             }
 
-            FinalStatistics = statisticsResults.Summary;
+            this.StatisticsResults = statisticsResults;
 
 
             var resultFileName = Path.Combine(_chartDirectory, string.Format("results-{0}.html", _resultId));
@@ -657,6 +656,19 @@ namespace QuantConnect.Lean.Engine.Results
     } // End Result Handler Thread:
 
 
+    public class OptimizationTotalResult
+    {
+        private Dictionary<Dictionary<string, Tuple<Type, object>>, StatisticsResults> _resutls = new Dictionary<Dictionary<string, Tuple<Type, object>>, StatisticsResults>(); 
 
+        public void AddPermutationResult(Dictionary<string, Tuple<Type, object>> permutation, OptimizationResultHandler result)
+        {
+            _resutls.Add(permutation, result.StatisticsResults);
+        }
+
+        public void SendFinalResults()
+        {
+            
+        }
+    }
 
 } // End Namespace

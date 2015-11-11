@@ -27,6 +27,8 @@ namespace QuantConnect.Lean.Engine
 
             var startTime = DateTime.Now;
 
+            var totalResult = new OptimizationTotalResult();
+
             foreach (var permutation in GetPermutations())
             {
                 // init system nahdlers
@@ -38,14 +40,18 @@ namespace QuantConnect.Lean.Engine
                 var realTimeHandlerTypeName = Config.Get("real-time-handler", "BacktestingRealTimeHandler");
                 var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
                 var historyProviderTypeName = Config.Get("history-provider", "SubscriptionDataReaderHistoryProvider");
+                var commandQueueHandlerTypeName = Config.Get("command-queue-handler", "EmptyCommandQueueHandler");
+
+                var permutationResult = new OptimizationResultHandler(startTime);
 
                 var leanEngineAlgorithmHandlers = new LeanEngineAlgorithmHandlers(
-                    new OptimizationResultHandler(startTime),
+                    permutationResult,
                     new OptimizationSetupHandler(permutation),
                     Composer.Instance.GetExportedValueByTypeName<IDataFeed>(dataFeedHandlerTypeName),
                     Composer.Instance.GetExportedValueByTypeName<ITransactionHandler>(transactionHandlerTypeName),
                     Composer.Instance.GetExportedValueByTypeName<IRealTimeHandler>(realTimeHandlerTypeName),
-                    Composer.Instance.GetExportedValueByTypeName<IHistoryProvider>(historyProviderTypeName)
+                    Composer.Instance.GetExportedValueByTypeName<IHistoryProvider>(historyProviderTypeName),
+                    Composer.Instance.GetExportedValueByTypeName<ICommandQueueHandler>(commandQueueHandlerTypeName)
                 );
                 
 
@@ -57,11 +63,17 @@ namespace QuantConnect.Lean.Engine
                 var engine = new Engine(leanEngineSystemHandlers, leanEngineAlgorithmHandlers, false);
                 engine.Run(job, assemblyPath);    
 
+                // save result
+                totalResult.AddPermutationResult(permutation, permutationResult);
+
                 // dispose
                 leanEngineSystemHandlers.Dispose();
                 leanEngineAlgorithmHandlers.Dispose();
                 Log.LogHandler.Dispose();
             }
+
+            // save final results
+            totalResult.SendFinalResults();
         }
 
         private static IEnumerable<Dictionary<string, Tuple<Type, object>>> GetPermutations()
