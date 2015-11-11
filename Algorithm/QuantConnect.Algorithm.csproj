@@ -84,6 +84,7 @@
     </Compile>
     <Compile Include="QCAlgorithm.cs" />
     <Compile Include="QCAlgorithm.History.cs" />
+    <Compile Include="QCAlgorithm.Param.cs" />
     <Compile Include="QCAlgorithm.Trading.cs" />
     <Compile Include="QCAlgorithm.Indicators.cs" />
     <Compile Include="QCAlgorithm.Plotting.cs" />

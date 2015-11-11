@@ -190,9 +190,11 @@
     <Compile Include="RealTime\IRealTimeHandler.cs" />
     <Compile Include="RealTime\ScheduledEventFactory.cs" />
     <Compile Include="Results\DesktopResultHandler.cs" />
+    <Compile Include="Results\OptimizationResultHandler.cs" />
     <Compile Include="Results\HtmlResultHandler.cs" />
     <Compile Include="Results\IResultHandler.cs" />
     <Compile Include="Setup\BrokerageSetupHandler.cs" />
+    <Compile Include="Setup\OptimizationSetupHandler.cs" />
     <Compile Include="Setup\SetupHandler.cs" />
     <Compile Include="StateCheck.cs" />
     <Compile Include="Setup\ConsoleSetupHandler.cs" />

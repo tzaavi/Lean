@@ -25,6 +25,9 @@ namespace QuantConnect.Algorithm.CSharp
         private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3);
         private decimal lastShortClose;
 
+        [IntParameter(90, 110, 5)]
+        public int SlowTrendSize = 100;
+
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);

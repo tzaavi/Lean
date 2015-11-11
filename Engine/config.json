@@ -6,7 +6,7 @@
     // two predefined environments, 'backtesting' and 'live', feel free
     // to add more!
 
-    "environment": "backtesting",
+    "environment": "optimization",
 
     // algorithm class selector
     "algorithm-type-name": "MeanReversionAlgorithm",
@@ -78,6 +78,15 @@
 
             "setup-handler": "QuantConnect.Lean.Engine.Setup.ConsoleSetupHandler",
             "result-handler": "QuantConnect.Lean.Engine.Results.HtmlResultHandler",
+            "data-feed-handler": "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataFeed",
+            "real-time-handler": "QuantConnect.Lean.Engine.RealTime.BacktestingRealTimeHandler",
+            "transaction-handler": "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
+        },
+
+		// defines the 'optimization' environment
+        "optimization": {
+            "live-mode": false,
+
             "data-feed-handler": "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataFeed",
             "real-time-handler": "QuantConnect.Lean.Engine.RealTime.BacktestingRealTimeHandler",
             "transaction-handler": "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
