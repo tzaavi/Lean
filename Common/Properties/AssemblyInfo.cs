@@ -42,3 +42,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("QuantConnect.Brokerages")]
 [assembly: InternalsVisibleTo("QuantConnect.Lean.Engine")]
 [assembly: InternalsVisibleTo("QuantConnect.Tests")]
+[assembly: InternalsVisibleTo("QuantConnect.Optimization.Engine")]

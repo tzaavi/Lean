@@ -1,40 +1,25 @@
-﻿/*
- * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
- * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
-*/
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Xml.Serialization;
 using Newtonsoft.Json;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Lean.Engine.Setup;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Logging;
+using QuantConnect.Optimization.Engine.Data;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
 using QuantConnect.Statistics;
-using SQLite;
+using Order = QuantConnect.Orders.Order;
 
-namespace QuantConnect.Lean.Engine.Results
+namespace QuantConnect.Optimization.Engine
 {
     /// <summary>
     /// Console local resulthandler passes messages back to the console/local GUI display.
@@ -423,6 +408,8 @@ namespace QuantConnect.Lean.Engine.Results
         /// <param name="banner">Runtime statistics banner information</param>
         public void SendFinalResult(AlgorithmNodePacket job, Dictionary<int, Order> orders, Dictionary<DateTime, decimal> profitLoss, Dictionary<string, Holding> holdings, StatisticsResults statisticsResults, Dictionary<string, string> banner)
         {
+            
+
             // uncomment these code traces to help write regression tests
             //Console.WriteLine("var statistics = new Dictionary<string, string>();");
 
@@ -434,6 +421,8 @@ namespace QuantConnect.Lean.Engine.Results
             }
 
             this.StatisticsResults = statisticsResults;
+
+            return;
 
 
             var resultFileName = Path.Combine(_chartDirectory, string.Format("results-{0}.html", ResultId));
@@ -664,25 +653,27 @@ namespace QuantConnect.Lean.Engine.Results
     {
         private List<ResultItem> _resutls = new List<ResultItem>();
         private string _chartDirectory;
+        private Database _db;
+        
 
-        public OptimizationTotalResult(DateTime optimizationStartTime)
+        public OptimizationTotalResult(DateTime optimizationStartTime, Database db)
         {
+            _db = db;
             var time = optimizationStartTime.ToString("yyyy-MM-dd-HH-mm");
             _chartDirectory = Path.Combine("../../../Charts/", Config.Get("algorithm-type-name"), time);
         }
 
         public void AddPermutationResult(Dictionary<string, Tuple<Type, object>> permutation, OptimizationResultHandler result)
         {
-            _resutls.Add(new ResultItem
-            {
-                Permutation = permutation.ToDictionary(x => x.Key, x => x.Value.Item2),
-                StatisticsResults = result.StatisticsResults,
-                ResultId = result.ResultId
-            });
+            // save to database
+            var permutationId = _db.InsertPermutation(permutation);
+            _db.InsertStatistics(result.StatisticsResults, permutationId);
         }
 
         public void SendFinalResults()
         {
+            return;
+
             var resultFileName = Path.Combine(_chartDirectory, string.Format("optimization.html"));
             var templateHtmlFile = "../../optimization.html";
 

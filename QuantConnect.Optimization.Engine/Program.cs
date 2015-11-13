@@ -1,64 +1,115 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using Nancy;
 using Nancy.Hosting.Self;
+using QuantConnect.Algorithm;
+using QuantConnect.Lean.Engine;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Lean.Engine.HistoricalData;
+using QuantConnect.Lean.Engine.RealTime;
+using QuantConnect.Lean.Engine.Setup;
+using QuantConnect.Lean.Engine.TransactionHandlers;
+using QuantConnect.Optimization.Engine.Data;
+using QuantConnect.Logging;
+using QuantConnect.Util;
+using QuantConnect.Configuration;
+using QuantConnect.Queues;
 
 namespace QuantConnect.Optimization.Engine
 {
     class Program
     {
+
         static void Main(string[] args)
         {
-            var db = new SQLiteConnection("URI=file:algo.db");
+            
+            
+            RunOptimization();
 
-            /*db.Open();
-
-            var cmd = db.CreateCommand();
-            cmd.CommandText = @"
-                create table if not exists ChartPoint (
-                    PermutationId int,
-                    Time datetime,
-                    Value double
-                );
-            ";
-            cmd.ExecuteNonQuery();
-
-
-            db.Close();*/
-
-            db.Insert(new ChartPoint
-            {
-                PermutationId = 14,
-                Time = DateTime.Now,
-                Value = 11.22m
-            });
-
-
-            var res = db.Query<ChartPoint>("select * from ChartPoint where PermutationId = 14");
+            
+            //var res = db.DB.Query<Order>("select * from [Order] where PermutationId = 1");
             //var res = db.Query<ChartPoint>("select PermutationId = @PermutationId", new { PermutationId = 12});
+        }
 
-           
+        static void RunOptimization()
+        {
+            Log.LogHandler = Composer.Instance.GetExportedValueByTypeName<ILogHandler>(Config.Get("log-handler", "CompositeLogHandler"));
+
+            Log.DebuggingEnabled = Config.GetBool("debug-mode");
+
+            var db = new Database(string.Format("opz-{0:yyyyMMddHHmmssfff}.sqlite", DateTime.Now));
+
+            var startTime = DateTime.Now;
+
+            var totalResult = new OptimizationTotalResult(startTime, db);
+
+            foreach (var permutation in GetPermutations())
+            {
+                // init system nahdlers
+                var leanEngineSystemHandlers = new LeanEngineSystemHandlers(new JobQueue(), new Api.Api(), new Messaging.Messaging()); //LeanEngineSystemHandlers.FromConfiguration(Composer.Instance);
+                leanEngineSystemHandlers.Initialize();
+
+                // init new result instaqance
+                var permutationResult = new OptimizationResultHandler(startTime);
+
+                // init algorithm handlers
+                var leanEngineAlgorithmHandlers = new LeanEngineAlgorithmHandlers(
+                    permutationResult,
+                    new OptimizationSetupHandler(permutation),
+                    new FileSystemDataFeed(), 
+                    new BacktestingTransactionHandler(), 
+                    new BacktestingRealTimeHandler(), 
+                    new SubscriptionDataReaderHistoryProvider(),
+                    new EmptyCommandQueueHandler()
+                );
+
+                // queue a job
+                string assemblyPath;
+                var job = leanEngineSystemHandlers.JobQueue.NextJob(out assemblyPath);
+
+                // run engine 
+                var engine = new Lean.Engine.Engine(leanEngineSystemHandlers, leanEngineAlgorithmHandlers, false);
+                engine.Run(job, assemblyPath);
+
+                // save result
+                totalResult.AddPermutationResult(permutation, permutationResult);
+
+                // dispose
+                leanEngineSystemHandlers.Dispose();
+                leanEngineAlgorithmHandlers.Dispose();
+                Log.LogHandler.Dispose();
+
+                break;
+            }
+
+            // save final results
+            totalResult.SendFinalResults();
+        }
+
+        static IEnumerable<Dictionary<string, Tuple<Type, object>>> GetPermutations()
+        {
+            var path = Config.Get("algorithm-location", "QuantConnect.Algorithm.CSharp.dll");
+            var lang = (Language)Enum.Parse(typeof(Language), Config.Get("algorithm-language"));
+            var leanEngineAlgorithmHandlers = LeanEngineAlgorithmHandlers.FromConfiguration(Composer.Instance);
+            var algo = leanEngineAlgorithmHandlers.Setup.CreateAlgorithmInstance(path, lang);
+            return QCAlgorithm.ExtractPermutations(algo);
         }
 
         static void StartNancy()
         {
             // need to run this comand in cmd (admin) 
-            // netsh http add urlacl url=http://+:8888/nancy/ user=Everyone
-            using (var nancyHost = new NancyHost(new Uri("http://localhost:8888/nancy/")))
+            // netsh http add urlacl url=http://+:8888/ user=Everyone
+            using (var nancyHost = new NancyHost(new Uri("http://localhost:8888/")))
             {
                 nancyHost.Start();
 
-                Console.WriteLine("Nancy now listening - navigating to http://localhost:8888/nancy/. Press enter to stop");
+                Console.WriteLine("Nancy now listening - navigating to http://localhost:8888/. Press enter to stop");
                 try
                 {
-                    Process.Start("http://localhost:8888/nancy/");
+                    Process.Start("http://localhost:8888/");
                 }
                 catch (Exception)
                 {
@@ -79,18 +130,16 @@ namespace QuantConnect.Optimization.Engine
                 return View["index", this.Request.Url];
             };
 
-            Get["/testing"] = parameters =>
+            Get["/api/charts"] = parameters =>
             {
-                return View["staticview", this.Request.Url];
+                return new[]
+                {
+                    new Data.ChartPoint {SeriesId = 1},
+                    new Data.ChartPoint {SeriesId = 2}
+                };
             };
         }
     }
 
-    [Table("ChartPoint")]
-    public class ChartPoint
-    {
-        public int PermutationId { get; set; }
-        public DateTime Time { get; set; }
-        public decimal Value { get; set; }
-    }
+
 }

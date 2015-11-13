@@ -31,6 +31,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>fe82e1f9</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -55,7 +56,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>QuantConnect.Lean.Engine.OptimizationEngine</StartupObject>
+    <StartupObject>QuantConnect.Lean.Engine.Engine</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -105,12 +106,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework">
-      <HintPath>..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer">
-      <HintPath>..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.SqlServer.dll</HintPath>
-    </Reference>
     <Reference Include="Fasterflect">
       <HintPath>..\packages\fasterflect.2.1.3\lib\net40\Fasterflect.dll</HintPath>
     </Reference>
@@ -146,15 +141,6 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Data.SQLite">
-      <HintPath>..\packages\System.Data.SQLite.Core.1.0.98.1\lib\net45\System.Data.SQLite.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.SQLite.EF6">
-      <HintPath>..\packages\System.Data.SQLite.EF6.1.0.98.1\lib\net45\System.Data.SQLite.EF6.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.SQLite.Linq">
-      <HintPath>..\packages\System.Data.SQLite.Linq.1.0.98.1\lib\net45\System.Data.SQLite.Linq.dll</HintPath>
-    </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -200,20 +186,15 @@
     <Compile Include="HistoricalData\SubscriptionDataReaderHistoryProvider.cs" />
     <Compile Include="LeanEngineAlgorithmHandlers.cs" />
     <Compile Include="LeanEngineSystemHandlers.cs" />
-    <Compile Include="OptimizationEngine.cs" />
     <Compile Include="RealTime\LiveTradingRealTimeHandler.cs" />
     <Compile Include="RealTime\BacktestingRealTimeHandler.cs" />
     <Compile Include="RealTime\IRealTimeHandler.cs" />
     <Compile Include="RealTime\ScheduledEventFactory.cs" />
     <Compile Include="Results\DesktopResultHandler.cs" />
-    <Compile Include="Results\OptimizationResultHandler.cs" />
     <Compile Include="Results\HtmlResultHandler.cs" />
     <Compile Include="Results\IResultHandler.cs" />
     <Compile Include="Setup\BrokerageSetupHandler.cs" />
-    <Compile Include="Setup\OptimizationSetupHandler.cs" />
     <Compile Include="Setup\SetupHandler.cs" />
-    <Compile Include="SQLite.cs" />
-    <Compile Include="SQLiteAsync.cs" />
     <Compile Include="StateCheck.cs" />
     <Compile Include="Setup\ConsoleSetupHandler.cs" />
     <Compile Include="Setup\BacktestingSetupHandler.cs" />
@@ -321,7 +302,6 @@
     <PostBuildEvent>
     </PostBuildEvent>
   </PropertyGroup>
-  <Import Project="..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

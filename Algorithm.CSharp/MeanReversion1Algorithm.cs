@@ -37,7 +37,7 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);
-            SetEndDate(2015, 1, 1);
+            SetEndDate(2014, 2, 1);
             
 
             // securities
