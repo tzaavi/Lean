@@ -19,8 +19,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Xml.Serialization;
 using Newtonsoft.Json;
+using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Lean.Engine.Setup;
@@ -29,6 +32,7 @@ using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
 using QuantConnect.Statistics;
+using SQLite;
 
 namespace QuantConnect.Lean.Engine.Results
 {
@@ -45,7 +49,7 @@ namespace QuantConnect.Lean.Engine.Results
         private readonly object _chartLock;
         private IConsoleStatusHandler _algorithmNode;
         private DateTime _optimizationStartTime;
-        private Guid _resultId;
+        
 
         //Sampling Periods:
         private DateTime _nextSample;
@@ -56,6 +60,8 @@ namespace QuantConnect.Lean.Engine.Results
 
 
         public StatisticsResults StatisticsResults { get; private set; }
+
+        public Guid ResultId { get; private set; }
 
         /// <summary>
         /// Messaging to store notification messages for processing.
@@ -137,7 +143,7 @@ namespace QuantConnect.Lean.Engine.Results
             _isActive = true;
             _notificationPeriod = TimeSpan.FromSeconds(5);
             _equityResults = new Dictionary<string, List<string>>();
-            _resultId = Guid.NewGuid();
+            ResultId = Guid.NewGuid();
         }
 
         public OptimizationResultHandler(DateTime optimizationStartTime)
@@ -175,7 +181,7 @@ namespace QuantConnect.Lean.Engine.Results
             _resamplePeriod = _algorithmNode.ComputeSampleEquityPeriod();
 
             var time = _optimizationStartTime.ToString("yyyy-MM-dd-HH-mm");
-            _chartDirectory = Path.Combine("../../../Charts/", packet.AlgorithmId, time);
+            _chartDirectory = Path.Combine("../../../Charts/", Config.Get("algorithm-type-name"), time);
 
             if(!Directory.Exists(_chartDirectory))
             {
@@ -430,7 +436,7 @@ namespace QuantConnect.Lean.Engine.Results
             this.StatisticsResults = statisticsResults;
 
 
-            var resultFileName = Path.Combine(_chartDirectory, string.Format("results-{0}.html", _resultId));
+            var resultFileName = Path.Combine(_chartDirectory, string.Format("results-{0}.html", ResultId));
             var templateHtmlFile = "../../results.html";
 
             var charts = new Dictionary<string, Chart>(Charts);
@@ -448,8 +454,6 @@ namespace QuantConnect.Lean.Engine.Results
             var html = File.ReadAllText(templateHtmlFile);
             html = html.Replace("[[JSON_DATA]]", serialized);
             File.WriteAllText(resultFileName, html);
-
-            System.Diagnostics.Process.Start(resultFileName);
         }
 
         /// <summary>
@@ -658,16 +662,82 @@ namespace QuantConnect.Lean.Engine.Results
 
     public class OptimizationTotalResult
     {
-        private Dictionary<Dictionary<string, Tuple<Type, object>>, StatisticsResults> _resutls = new Dictionary<Dictionary<string, Tuple<Type, object>>, StatisticsResults>(); 
+        private List<ResultItem> _resutls = new List<ResultItem>();
+        private string _chartDirectory;
+
+        public OptimizationTotalResult(DateTime optimizationStartTime)
+        {
+            var time = optimizationStartTime.ToString("yyyy-MM-dd-HH-mm");
+            _chartDirectory = Path.Combine("../../../Charts/", Config.Get("algorithm-type-name"), time);
+        }
 
         public void AddPermutationResult(Dictionary<string, Tuple<Type, object>> permutation, OptimizationResultHandler result)
         {
-            _resutls.Add(permutation, result.StatisticsResults);
+            _resutls.Add(new ResultItem
+            {
+                Permutation = permutation.ToDictionary(x => x.Key, x => x.Value.Item2),
+                StatisticsResults = result.StatisticsResults,
+                ResultId = result.ResultId
+            });
         }
 
         public void SendFinalResults()
         {
+            var resultFileName = Path.Combine(_chartDirectory, string.Format("optimization.html"));
+            var templateHtmlFile = "../../optimization.html";
+
+            var serialized = JsonConvert.SerializeObject(_resutls);
+
+            var html = File.ReadAllText(templateHtmlFile);
+            html = html.Replace("[[JSON_DATA]]", serialized);
+            File.WriteAllText(resultFileName, html);
+
+            System.Diagnostics.Process.Start(resultFileName);
+        }
+
+        private class ResultItem
+        {
+            public Dictionary<string, object> Permutation { get; set; }
+            public StatisticsResults StatisticsResults { get; set; }
+            public Guid ResultId { get; set; }
+        }
+
+        public void TestSqlite()
+        {
+            var db = new System.Data.SQLite.SQLiteConnection("URI=file:algo.db");
+
+            db.Open();
+
+            var cmd = db.CreateCommand();
+            cmd.CommandText = @"
+                create table if not exists ChartPoint (
+                    PermutationId int,
+                    Time datetime,
+                    Value double
+                );
+            ";
+            cmd.ExecuteNonQuery();
+
+
+            cmd = db.CreateCommand();
+            cmd.CommandText = @"
+                insert into ChartPoint(PermutationId, Time, Value)
+                values (1, '2015-11-05 09:15:32', 1.34);
+            ";
+            cmd.ExecuteNonQuery();
+
+        }
+
+        private void CreateSchema()
+        {
             
+        }
+
+        public class ChartPoint
+        {
+            public int PermutationId { get; set; }
+            public DateTime Time { get; set; }
+            public decimal Value { get; set; }
         }
     }
 

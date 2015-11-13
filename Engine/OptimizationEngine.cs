@@ -8,11 +8,13 @@ using QuantConnect.Algorithm.CSharp;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Lean.Engine.HistoricalData;
 using QuantConnect.Lean.Engine.RealTime;
 using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Lean.Engine.Setup;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Logging;
+using QuantConnect.Queues;
 using QuantConnect.Util;
 
 namespace QuantConnect.Lean.Engine
@@ -27,12 +29,15 @@ namespace QuantConnect.Lean.Engine
 
             var startTime = DateTime.Now;
 
-            var totalResult = new OptimizationTotalResult();
+            var totalResult = new OptimizationTotalResult(startTime);
+
+            totalResult.TestSqlite();
+            return;
 
             foreach (var permutation in GetPermutations())
             {
                 // init system nahdlers
-                var leanEngineSystemHandlers = LeanEngineSystemHandlers.FromConfiguration(Composer.Instance);
+                var leanEngineSystemHandlers = new LeanEngineSystemHandlers(new JobQueue(), new Api.Api(), new Messaging.Messaging()); //LeanEngineSystemHandlers.FromConfiguration(Composer.Instance);
                 leanEngineSystemHandlers.Initialize();
 
                 // init algorithm handlers
@@ -47,12 +52,13 @@ namespace QuantConnect.Lean.Engine
                 var leanEngineAlgorithmHandlers = new LeanEngineAlgorithmHandlers(
                     permutationResult,
                     new OptimizationSetupHandler(permutation),
-                    Composer.Instance.GetExportedValueByTypeName<IDataFeed>(dataFeedHandlerTypeName),
-                    Composer.Instance.GetExportedValueByTypeName<ITransactionHandler>(transactionHandlerTypeName),
-                    Composer.Instance.GetExportedValueByTypeName<IRealTimeHandler>(realTimeHandlerTypeName),
-                    Composer.Instance.GetExportedValueByTypeName<IHistoryProvider>(historyProviderTypeName),
-                    Composer.Instance.GetExportedValueByTypeName<ICommandQueueHandler>(commandQueueHandlerTypeName)
+                    new FileSystemDataFeed(), //Composer.Instance.GetExportedValueByTypeName<IDataFeed>(dataFeedHandlerTypeName),
+                    new BacktestingTransactionHandler(), //Composer.Instance.GetExportedValueByTypeName<ITransactionHandler>(transactionHandlerTypeName),
+                    new BacktestingRealTimeHandler(), //Composer.Instance.GetExportedValueByTypeName<IRealTimeHandler>(realTimeHandlerTypeName),
+                    new SubscriptionDataReaderHistoryProvider(), //Composer.Instance.GetExportedValueByTypeName<IHistoryProvider>(historyProviderTypeName),
+                    new EmptyCommandQueueHandler()//Composer.Instance.GetExportedValueByTypeName<ICommandQueueHandler>(commandQueueHandlerTypeName)
                 );
+               
                 
 
                 // queue a job

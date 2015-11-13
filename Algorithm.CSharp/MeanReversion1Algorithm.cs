@@ -25,13 +25,19 @@ namespace QuantConnect.Algorithm.CSharp
         private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3);
         private decimal lastShortClose;
 
-        [IntParameter(90, 110, 5)]
+        //[IntParameter(90, 110, 5)]
         public int SlowTrendSize = 100;
+
+        //[DecimalParameter(0.001, 0.003, 0.0005)]
+        public decimal Target = 0.002m;
+
+        [DecimalParameter(0.01, 0.2, 0.01)]
+        public decimal TralingStopPercent = 0.02m;
 
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);
-            SetEndDate(2014, 2, 1);
+            SetEndDate(2015, 1, 1);
             
 
             // securities
@@ -65,15 +71,15 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 if (isLongSetup && bar.Close > lastBars[0].Low && lastShortClose < lastBars[0].Low)
                 {
-                    stop = bar.Close - 0.001m;
-                    target = bar.Close + 0.002m;
+                    stop = bar.Close - (TralingStopPercent / 100 * bar.Close);
+                    target = bar.Close + Target;
                     Order("EURUSD", 10000);
                 }
 
                 if (isShortSetup && bar.Close < lastBars[0].High && lastShortClose > lastBars[0].High)
                 {
-                    stop = bar.Close + 0.001m;
-                    target = bar.Close - 0.002m;
+                    stop = bar.Close + (TralingStopPercent / 100 * bar.Close);
+                    target = bar.Close - Target;
                     Order("EURUSD", -10000);
                 }
             }
@@ -84,14 +90,14 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 var holding = Portfolio["EURUSD"];
 
-                if (holding.IsLong && (bar.Close - 0.001m) > stop)
+                if (holding.IsLong && (bar.Close - (TralingStopPercent / 100 * bar.Close)) > stop)
                 {
-                    stop = bar.Close - 0.001m;
+                    stop = bar.Close - (TralingStopPercent / 100 * bar.Close);
                 }
 
-                if (holding.IsShort && (bar.Close + 0.001m) < stop)
+                if (holding.IsShort && (bar.Close + (TralingStopPercent / 100 * bar.Close)) < stop)
                 {
-                    stop = bar.Close + 0.001m;
+                    stop = bar.Close + (TralingStopPercent / 100 * bar.Close);
                 }
             }
 
