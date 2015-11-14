@@ -10,8 +10,6 @@ namespace QuantConnect.Optimization.Engine.Data
     public class Database
     {
         public SQLiteConnection DB { get; private set; }
-
-        private int _permutationCounter = 0;
         
         public Database(string file)
         {
@@ -23,28 +21,25 @@ namespace QuantConnect.Optimization.Engine.Data
         {
             var desc = string.Join(",", permutation.Select(x => string.Format("{0}:{1}", x.Key, x.Value.Item2)));
 
-            DB.Insert(new Permutation
+            return (int)DB.Insert(new Test
             {
-                Id = ++_permutationCounter,
-                Description = desc
+                Vars = desc
             });
-
-            return _permutationCounter;
         }
 
-        public void InsertStatistics(StatisticsResults stats, int permutationId)
+        public void InsertStatistics(StatisticsResults stats, int testId)
         {
             // save summary
             foreach (var item in stats.Summary)
             {
-                DB.Insert(new Stat(permutationId, item.Key, item.Value));
+                DB.Insert(new Stat(testId, item.Key, item.Value));
             }
 
             // save trade statistics
             foreach (var pi in stats.TotalPerformance.TradeStatistics.GetType().GetProperties())
             {
                 DB.Insert(new Stat(
-                    permutationId,
+                    testId,
                     string.Format("Trade.{0}", pi.Name),
                     pi.GetValue(stats.TotalPerformance.TradeStatistics).ToString()));
             }
@@ -53,7 +48,7 @@ namespace QuantConnect.Optimization.Engine.Data
             foreach (var pi in stats.TotalPerformance.PortfolioStatistics.GetType().GetProperties())
             {
                 DB.Insert(new Stat(
-                    permutationId,
+                    testId,
                     string.Format("Portfolio.{0}", pi.Name),
                     pi.GetValue(stats.TotalPerformance.PortfolioStatistics).ToString()));
             }
@@ -63,7 +58,7 @@ namespace QuantConnect.Optimization.Engine.Data
             {
                 DB.Insert(new Trade
                 {
-                    PermutationId = permutationId,
+                    TestId = testId,
                     Direction = (int) t.Direction,
                     Duration = t.Duration.TotalSeconds,
                     EndTradeDrawdown = t.EndTradeDrawdown,
@@ -84,20 +79,20 @@ namespace QuantConnect.Optimization.Engine.Data
         private void CreateSchema()
         {
             var sql = @"
-                create table if not exists Permutation (
-                    Id int,
-                    Description text
+                create table if not exists Test (
+                    Id INTEGER PRIMARY KEY,
+                    Vars text
                 );
 
                 create table if not exists Chart (
-                    Id int,
-                    PermutationId int,
+                    Id INTEGER PRIMARY KEY,
+                    TestId int,
                     Name text,
                     ChartType int
                 );
 
                 create table if not exists ChartSeries (
-                    Id int,
+                    Id INTEGER PRIMARY KEY,
                     ChartId int,
                     Name text,
                     Unit text,
@@ -111,15 +106,15 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists Stat (
-                    PermutationId int,
+                    TestId int,
                     Key text,
                     Value double,
                     Unit text
                 );
 
                 create table if not exists [Order] (
-                    Id int,
-                    PermutationId int,
+                    OrderId int,
+                    TestId int,
                     Type int,
                     Time int,
                     Price double,
@@ -130,7 +125,7 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists Trade (
-                    PermutationId int,
+                    TestId int,
                     EntryTime int,
                     EntryPrice double,
                     ExitTime int,
@@ -157,18 +152,18 @@ namespace QuantConnect.Optimization.Engine.Data
 
     }
 
-    [Table("Permutation")]
-    public class Permutation
+    [Table("Test")]
+    public class Test
     {
         public int Id { get; set; }
-        public string Description { get; set; }
+        public string Vars { get; set; }
     }
 
     [Table("Chart")]
     public class Chart
     {
         public int Id { get; set; }
-        public int PermutatoinId { get; set; }
+        public int TestId { get; set; }
         public string Name { get; set; }
         public int ChartType { get; set; }
     }
@@ -194,9 +189,9 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("Stat")]
     public class Stat
     {
-        public Stat(int permutatoinId, string key, string strVal)
+        public Stat(int testId, string key, string strVal)
         {
-            PermutationId = permutatoinId;
+            TestId = testId;
             Key = key;
 
             // check for % unit
@@ -237,7 +232,7 @@ namespace QuantConnect.Optimization.Engine.Data
             }
         }
 
-        public int PermutationId { get; set; }
+        public int TestId { get; set; }
         public string Key { get; set; }
         public double Value { get; set; }
         public string Unit { get; set; }
@@ -246,8 +241,8 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("[Order]")]
     public class Order
     {
-        public int Id { get; set; }
-        public int PermutationId { get; set; }
+        public int OrderId { get; set; }
+        public int TestId { get; set; }
         public int Type { get; set; }
         public long Time { get; set; }
         public decimal Price { get; set; }
@@ -260,7 +255,7 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("Trade")]
     public class Trade
     {
-        public int PermutationId { get; set; }
+        public int TestId { get; set; }
         public long EntryTime { get; set; }
         public decimal EntryPrice { get; set; }
         public long ExitTime { get; set; }
