@@ -44,7 +44,7 @@ namespace QuantConnect.Optimization.Engine
 
             var startTime = DateTime.Now;
 
-            var totalResult = new OptimizationTotalResult(startTime, db);
+            var totalResult = new OptimizationTotalResult(db);
 
             foreach (var permutation in GetPermutations())
             {

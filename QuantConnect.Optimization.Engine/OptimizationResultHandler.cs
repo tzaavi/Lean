@@ -651,84 +651,24 @@ namespace QuantConnect.Optimization.Engine
 
     public class OptimizationTotalResult
     {
-        private List<ResultItem> _resutls = new List<ResultItem>();
-        private string _chartDirectory;
         private Database _db;
         
 
-        public OptimizationTotalResult(DateTime optimizationStartTime, Database db)
+        public OptimizationTotalResult(Database db)
         {
             _db = db;
-            var time = optimizationStartTime.ToString("yyyy-MM-dd-HH-mm");
-            _chartDirectory = Path.Combine("../../../Charts/", Config.Get("algorithm-type-name"), time);
         }
 
         public void AddPermutationResult(Dictionary<string, Tuple<Type, object>> permutation, OptimizationResultHandler result)
         {
             // save to database
-            var permutationId = _db.InsertPermutation(permutation);
-            _db.InsertStatistics(result.StatisticsResults, permutationId);
+            var testId = _db.InsertPermutation(permutation);
+            _db.InsertStatistics(result.StatisticsResults, testId);
+            _db.InsertCharts(result.Charts.Values, testId);
         }
 
         public void SendFinalResults()
         {
-            return;
-
-            var resultFileName = Path.Combine(_chartDirectory, string.Format("optimization.html"));
-            var templateHtmlFile = "../../optimization.html";
-
-            var serialized = JsonConvert.SerializeObject(_resutls);
-
-            var html = File.ReadAllText(templateHtmlFile);
-            html = html.Replace("[[JSON_DATA]]", serialized);
-            File.WriteAllText(resultFileName, html);
-
-            System.Diagnostics.Process.Start(resultFileName);
-        }
-
-        private class ResultItem
-        {
-            public Dictionary<string, object> Permutation { get; set; }
-            public StatisticsResults StatisticsResults { get; set; }
-            public Guid ResultId { get; set; }
-        }
-
-        public void TestSqlite()
-        {
-            var db = new System.Data.SQLite.SQLiteConnection("URI=file:algo.db");
-
-            db.Open();
-
-            var cmd = db.CreateCommand();
-            cmd.CommandText = @"
-                create table if not exists ChartPoint (
-                    PermutationId int,
-                    Time datetime,
-                    Value double
-                );
-            ";
-            cmd.ExecuteNonQuery();
-
-
-            cmd = db.CreateCommand();
-            cmd.CommandText = @"
-                insert into ChartPoint(PermutationId, Time, Value)
-                values (1, '2015-11-05 09:15:32', 1.34);
-            ";
-            cmd.ExecuteNonQuery();
-
-        }
-
-        private void CreateSchema()
-        {
-            
-        }
-
-        public class ChartPoint
-        {
-            public int PermutationId { get; set; }
-            public DateTime Time { get; set; }
-            public decimal Value { get; set; }
         }
     }
 

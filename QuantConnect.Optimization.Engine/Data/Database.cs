@@ -76,6 +76,19 @@ namespace QuantConnect.Optimization.Engine.Data
             }
         }
 
+        public void InsertCharts(IEnumerable<QuantConnect.Chart> charts, int testId)
+        {
+            foreach (var chart in charts)
+            {
+                DB.Insert(new Chart
+                {
+                    ChartType = (int) chart.ChartType,
+                    Name = chart.Name,
+                    TestId = testId
+                });
+            }
+        }
+
         private void CreateSchema()
         {
             var sql = @"
