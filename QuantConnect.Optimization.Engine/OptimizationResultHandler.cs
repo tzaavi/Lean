@@ -33,14 +33,12 @@ namespace QuantConnect.Optimization.Engine
         private IAlgorithm _algorithm;
         private readonly object _chartLock;
         private IConsoleStatusHandler _algorithmNode;
-        private DateTime _optimizationStartTime;
         
 
         //Sampling Periods:
         private DateTime _nextSample;
         private TimeSpan _resamplePeriod;
         private readonly TimeSpan _notificationPeriod;
-        private string _chartDirectory;
         private readonly Dictionary<string, List<string>> _equityResults;
 
 
@@ -131,11 +129,6 @@ namespace QuantConnect.Optimization.Engine
             ResultId = Guid.NewGuid();
         }
 
-        public OptimizationResultHandler(DateTime optimizationStartTime)
-            : this()
-        {
-            _optimizationStartTime = optimizationStartTime;
-        }
 
         /// <summary>
         /// Initialize the result handler with this result packet.
@@ -164,15 +157,6 @@ namespace QuantConnect.Optimization.Engine
                 _algorithmNode = new LiveConsoleStatusHandler(live);
             }
             _resamplePeriod = _algorithmNode.ComputeSampleEquityPeriod();
-
-            var time = _optimizationStartTime.ToString("yyyy-MM-dd-HH-mm");
-            _chartDirectory = Path.Combine("../../../Charts/", Config.Get("algorithm-type-name"), time);
-
-            if(!Directory.Exists(_chartDirectory))
-            {
-                Directory.CreateDirectory(_chartDirectory);    
-            }
-            
         }
 
         /// <summary>
@@ -263,19 +247,8 @@ namespace QuantConnect.Optimization.Engine
         /// <remarks>Sample can be used to create new charts or sample equity - daily performance.</remarks>
         public void Sample(string chartName, ChartType chartType, string seriesName, SeriesType seriesType, DateTime time, decimal value, string unit = "$")
         {
-            var chartFilename = Path.Combine(_chartDirectory, chartName + "-" + seriesName + ".csv");
-
             lock (_chartLock)
             {
-                // Add line to list in dictionary, will be written to file at the end
-                List<string> rows;
-                if (!_equityResults.TryGetValue(chartFilename, out rows))
-                {
-                    rows = new List<string>();
-                    _equityResults[chartFilename] = rows;
-                }
-                rows.Add(time + "," + value.ToString("F2", CultureInfo.InvariantCulture));
-
                 //Add a copy locally:
                 if (!Charts.ContainsKey(chartName))
                 {
@@ -408,8 +381,6 @@ namespace QuantConnect.Optimization.Engine
         /// <param name="banner">Runtime statistics banner information</param>
         public void SendFinalResult(AlgorithmNodePacket job, Dictionary<int, Order> orders, Dictionary<DateTime, decimal> profitLoss, Dictionary<string, Holding> holdings, StatisticsResults statisticsResults, Dictionary<string, string> banner)
         {
-            
-
             // uncomment these code traces to help write regression tests
             //Console.WriteLine("var statistics = new Dictionary<string, string>();");
 
@@ -421,28 +392,6 @@ namespace QuantConnect.Optimization.Engine
             }
 
             this.StatisticsResults = statisticsResults;
-
-            return;
-
-
-            var resultFileName = Path.Combine(_chartDirectory, string.Format("results-{0}.html", ResultId));
-            var templateHtmlFile = "../../results.html";
-
-            var charts = new Dictionary<string, Chart>(Charts);
-
-            var result = new
-            {
-                Charts = charts,
-                Orders = orders,
-                Statistics = statisticsResults.Summary,
-                TotalPerformance = statisticsResults.TotalPerformance
-            };
-
-            var serialized = JsonConvert.SerializeObject(result);
-
-            var html = File.ReadAllText(templateHtmlFile);
-            html = html.Replace("[[JSON_DATA]]", serialized);
-            File.WriteAllText(resultFileName, html);
         }
 
         /// <summary>

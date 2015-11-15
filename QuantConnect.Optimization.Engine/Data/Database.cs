@@ -9,36 +9,58 @@ namespace QuantConnect.Optimization.Engine.Data
 {
     public class Database
     {
-        public SQLiteConnection DB { get; private set; }
-        
+        private string _connectionString;
+
+        public SQLiteConnection Connection()
+        {
+            return new SQLiteConnection(_connectionString); 
+        }
+
         public Database(string file)
         {
-            DB = new SQLiteConnection(string.Format("URI=file:{0}", file));
+            _connectionString = string.Format("URI=file:{0}", file);
             CreateSchema();
         }
 
         public int InsertPermutation(Dictionary<string, Tuple<Type, object>> permutation)
         {
-            var desc = string.Join(",", permutation.Select(x => string.Format("{0}:{1}", x.Key, x.Value.Item2)));
+            var conn = Connection();
 
-            return (int)DB.Insert(new Test
+            // add test
+            var testId = (int)conn.Insert(new Test
             {
-                Vars = desc
+                Desc = string.Join(",", permutation.Select(x => string.Format("{0}:{1}", x.Key, x.Value.Item2)))
             });
+
+            // add parameters
+            foreach (var paramater in permutation)
+            {
+                conn.Insert(new Parameter
+                {
+                    TestId = testId,
+                    Name = paramater.Key,
+                    Value =  Convert.ToDouble(paramater.Value.Item2)
+                });
+            }
+
+
+            return testId;
         }
 
         public void InsertStatistics(StatisticsResults stats, int testId)
         {
+            var conn = Connection();
+
             // save summary
             foreach (var item in stats.Summary)
             {
-                DB.Insert(new Stat(testId, item.Key, item.Value));
+                conn.Insert(new Stat(testId, item.Key, item.Value));
             }
 
             // save trade statistics
             foreach (var pi in stats.TotalPerformance.TradeStatistics.GetType().GetProperties())
             {
-                DB.Insert(new Stat(
+                conn.Insert(new Stat(
                     testId,
                     string.Format("Trade.{0}", pi.Name),
                     pi.GetValue(stats.TotalPerformance.TradeStatistics).ToString()));
@@ -47,7 +69,7 @@ namespace QuantConnect.Optimization.Engine.Data
             // save trade Portfolio Statistics
             foreach (var pi in stats.TotalPerformance.PortfolioStatistics.GetType().GetProperties())
             {
-                DB.Insert(new Stat(
+                conn.Insert(new Stat(
                     testId,
                     string.Format("Portfolio.{0}", pi.Name),
                     pi.GetValue(stats.TotalPerformance.PortfolioStatistics).ToString()));
@@ -56,7 +78,7 @@ namespace QuantConnect.Optimization.Engine.Data
             // save trades
             foreach (var t in stats.TotalPerformance.ClosedTrades)
             {
-                DB.Insert(new Trade
+                conn.Insert(new Trade
                 {
                     TestId = testId,
                     Direction = (int) t.Direction,
@@ -78,9 +100,11 @@ namespace QuantConnect.Optimization.Engine.Data
 
         public void InsertCharts(IEnumerable<QuantConnect.Chart> charts, int testId)
         {
+            var conn = Connection();
+
             foreach (var chart in charts)
             {
-                DB.Insert(new Chart
+                conn.Insert(new Chart
                 {
                     ChartType = (int) chart.ChartType,
                     Name = chart.Name,
@@ -89,12 +113,23 @@ namespace QuantConnect.Optimization.Engine.Data
             }
         }
 
+        //var res = db.DB.Query<Order>("select * from [Order] where PermutationId = 1");
+        //var res = db.Query<ChartPoint>("select PermutationId = @PermutationId", new { PermutationId = 12});
+
         private void CreateSchema()
         {
+            var conn = Connection();
+
             var sql = @"
                 create table if not exists Test (
                     Id INTEGER PRIMARY KEY,
-                    Vars text
+                    Desc text
+                );
+
+                create table if not exists Parameter (
+                    TestId int,
+                    Name text,
+                    Value double
                 );
 
                 create table if not exists Chart (
@@ -155,11 +190,11 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
             ";
 
-            DB.Open();
-            var cmd = DB.CreateCommand();
+            conn.Open();
+            var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
-            DB.Close();
+            conn.Close();
         }
 
 
@@ -169,7 +204,15 @@ namespace QuantConnect.Optimization.Engine.Data
     public class Test
     {
         public int Id { get; set; }
-        public string Vars { get; set; }
+        public string Desc { get; set; }
+    }
+
+    [Table("Parameter")]
+    public class Parameter
+    {
+        public int TestId { get; set; }
+        public string Name { get; set; }
+        public double Value { get; set; }
     }
 
     [Table("Chart")]
@@ -202,6 +245,8 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("Stat")]
     public class Stat
     {
+        public Stat() { }
+
         public Stat(int testId, string key, string strVal)
         {
             TestId = testId;

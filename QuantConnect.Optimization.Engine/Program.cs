@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using Nancy;
@@ -16,6 +17,7 @@ using QuantConnect.Optimization.Engine.Data;
 using QuantConnect.Logging;
 using QuantConnect.Util;
 using QuantConnect.Configuration;
+using QuantConnect.Optimization.Engine.Web;
 using QuantConnect.Queues;
 
 namespace QuantConnect.Optimization.Engine
@@ -25,13 +27,21 @@ namespace QuantConnect.Optimization.Engine
 
         static void Main(string[] args)
         {
-            
-            
-            RunOptimization();
+            Console.WriteLine("Options:");
+            Console.WriteLine("\t1) Run optimization");
+            Console.WriteLine("\t2) View results");
+            Console.Write("\n\nChoose operation (1 is default):");
+            var option = Console.Read();
 
-            
-            //var res = db.DB.Query<Order>("select * from [Order] where PermutationId = 1");
-            //var res = db.Query<ChartPoint>("select PermutationId = @PermutationId", new { PermutationId = 12});
+            if (option == 13 || option == 49)
+            {
+                RunOptimization();  
+            }
+
+            if (option == 50)
+            {
+                StartNancy();
+            }
         }
 
         static void RunOptimization()
@@ -40,9 +50,14 @@ namespace QuantConnect.Optimization.Engine
 
             Log.DebuggingEnabled = Config.GetBool("debug-mode");
 
-            var db = new Database(string.Format("opz-{0:yyyyMMddHHmmssfff}.sqlite", DateTime.Now));
-
-            var startTime = DateTime.Now;
+            //create database
+            var opzDataFolder = Path.Combine(Config.Get("data-folder"), "optimization");
+            if (!Directory.Exists(opzDataFolder))
+            {
+                Directory.CreateDirectory(opzDataFolder);
+            }
+            var dbFile = Path.Combine(opzDataFolder, string.Format("{0}-{1:yyyyMMddHHmmssfff}.sqlite", Config.Get("algorithm-type-name"), DateTime.Now));
+            var db = new Database(dbFile);
 
             var totalResult = new OptimizationTotalResult(db);
 
@@ -53,7 +68,7 @@ namespace QuantConnect.Optimization.Engine
                 leanEngineSystemHandlers.Initialize();
 
                 // init new result instaqance
-                var permutationResult = new OptimizationResultHandler(startTime);
+                var permutationResult = new OptimizationResultHandler();
 
                 // init algorithm handlers
                 var leanEngineAlgorithmHandlers = new LeanEngineAlgorithmHandlers(
@@ -81,8 +96,6 @@ namespace QuantConnect.Optimization.Engine
                 leanEngineSystemHandlers.Dispose();
                 leanEngineAlgorithmHandlers.Dispose();
                 Log.LogHandler.Dispose();
-
-                break;
             }
 
             // save final results
@@ -100,9 +113,12 @@ namespace QuantConnect.Optimization.Engine
 
         static void StartNancy()
         {
-            // need to run this comand in cmd (admin) 
+            // may need to run this comand in cmd (admin) 
             // netsh http add urlacl url=http://+:8888/ user=Everyone
-            using (var nancyHost = new NancyHost(new Uri("http://localhost:8888/")))
+
+            var hostConfigs = new HostConfiguration {UrlReservations = {CreateAutomatically = true}};
+
+            using (var nancyHost = new NancyHost(new Uri("http://localhost:8888/"), new Bootstrapper(), hostConfigs))
             {
                 nancyHost.Start();
 
@@ -120,26 +136,4 @@ namespace QuantConnect.Optimization.Engine
             Console.WriteLine("Stopped. Good bye!");
         }
     }
-
-    public class TestModule : NancyModule
-    {
-        public TestModule()
-        {
-            Get["/"] = parameters =>
-            {
-                return View["index", this.Request.Url];
-            };
-
-            Get["/api/charts"] = parameters =>
-            {
-                return new[]
-                {
-                    new Data.ChartPoint {SeriesId = 1},
-                    new Data.ChartPoint {SeriesId = 2}
-                };
-            };
-        }
-    }
-
-
 }

@@ -31,7 +31,7 @@ namespace QuantConnect.Algorithm.CSharp
         //[DecimalParameter(0.001, 0.003, 0.0005)]
         public decimal Target = 0.002m;
 
-        [DecimalParameter(0.01, 0.2, 0.01)]
+        [DecimalParameter(0.01, 0.10, 0.01)]
         public decimal TralingStopPercent = 0.02m;
 
         public override void Initialize()
