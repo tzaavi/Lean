@@ -106,40 +106,32 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
         var dim = this.ui.ddDimentions.val();
         console.log('renderChart', dim, param1, param2);
 
+        if(param2 != '' && param2 != param1){
+            self.renderChartTwoParam(param1, param2, dim);
+        }else{
+            self.renderChartOneParam(param1, dim);
+        }
+
+    },
+
+    renderChartOneParam: function(param1, dim){
+        var self = this;
         var series = {
             name: param1,
             data: []
         };
         series.data = _.map(self.data.stats, function(item){
-            if(param2 != '' && param2 != param1){
-                return {
-                    x: item.parameters[param1],
-                    y: item.parameters[param2],
-                    z: item.values[dim]
-                }
-            }else{
-                return {
-                    x: item.parameters[param1],
-                    y: item.values[dim]
-                }
+            return {
+                x: item.parameters[param1],
+                y: item.values[dim]
             }
-
         });
         console.log('series', series);
-
-
 
         var options = {
             chart: {
                 type: 'scatter',
-                zoomType: 'xy',
-                options3d: {
-                    enabled: param2 != '',
-                    alpha: 10,
-                    beta: 30,
-                    depth: 250,
-                    viewDistance: 50,
-                }
+                zoomType: 'xy'
             },
             title: {
                 text: dim
@@ -177,5 +169,37 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
             series: [series]
         };
         self.ui.chartWrapper.highcharts(options);
+    },
+
+    renderChartTwoParam: function(param1, param2, dim){
+        var self = this;
+        self.ui.chartWrapper.empty();
+        var data =[{
+            type: 'scatter3d',
+            mode:"markers",
+            x: _.map(self.data.stats, function(item){
+                return item.parameters[param1];
+            }),
+            y: _.map(self.data.stats, function(item){
+                return item.parameters[param2];
+            }),
+            z: _.map(self.data.stats, function(item){
+                return item.values[dim];
+            })
+        }];
+        console.log('plotly', data);
+        var layout = {
+          title: 'Mt Bruno Elevation',
+          autosize: false,
+          //width: 500,
+          //height: 500,
+          margin: {
+            l: 65,
+            r: 50,
+            b: 65,
+            t: 90
+          }
+        };
+        Plotly.newPlot(self.ui.chartWrapper.get(0), data, layout);
     }
 });
