@@ -37,20 +37,15 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 return View["optimization"];
             };
 
-            
-            Get["/api/charts"] = parameters =>
+            Get["/executions/{id}"] = parameters =>
             {
-                return new[]
-                {
-                    new Data.ChartPoint {SeriesId = 1},
-                    new Data.ChartPoint {SeriesId = 2}
-                };
+                return View["Execution"];
             };
 
-            Get["/api/tests"] = parameters =>
+            Get["/api/executions"] = parameters =>
             {
                 var conn = _db.Connection();
-                return conn.Query<Test>("select * from Test");
+                return conn.Query<Execution>("select * from Execution");
             };
 
             Get["/api/optimization/parameters"] = parameters =>
@@ -62,23 +57,23 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
             Get["/api/optimization/dimentions"] = parameters =>
             {
                 var conn = _db.Connection();
-                return conn.Query("select distinct(Name) from Stat");
+                return conn.Query("select Key, Name, Category from Stat group by Key, Name, Category");
             };
 
             Get["/api/optimization/stats"] = parameters =>
             {
                 var conn = _db.Connection();
 
-                var valueList = conn.Query<Stat>("select * from Stat").ToList();
+                var statList = conn.Query<Stat>("select * from Stat").ToList();
                 var paramList = conn.Query<Parameter>("select * from Parameter").ToList();
 
-                return paramList.GroupBy(x => x.TestId).Select(x =>
+                return paramList.GroupBy(x => x.ExId).Select(x =>
                 {
-                    dynamic test = new ExpandoObject();
-                    test.TestId = x.Key;
-                    test.Parameters = x.OrderBy(p => p.Name).ToDictionary(p => p.Name, p => p.Value);
-                    test.Values = valueList.OrderBy(v => v.Name).Where(v => v.TestId == x.Key).ToDictionary(v => v.Name, v => v.Value);
-                    return test;
+                    dynamic ex = new ExpandoObject();
+                    ex.ExId = x.Key;
+                    ex.Parameters = x.OrderBy(p => p.Name).ToDictionary(p => p.Name, p => p.Value);
+                    ex.Values = statList.OrderBy(s => s.Key).Where(s => s.ExId == x.Key).ToDictionary(s => s.Key, s => s.Value);
+                    return ex;
                 });
             };
 

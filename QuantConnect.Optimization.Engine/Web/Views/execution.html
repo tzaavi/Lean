@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Optimization</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+</head>
+<body>
+
+    <div id="main-view">
+
+    </div>
+
+
+    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.marionette/2.4.1/backbone.marionette.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="//cdn.jsdelivr.net/momentjs/2.10.6/moment.min.js"></script>
+    <script src="//code.highcharts.com/stock/highstock.js"></script>
+    <script src="http://code.highcharts.com/highcharts-3d.js"></script>
+    <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="/content/js/optimization.js"></script>
+
+
+    <script>
+        $(function () {
+            var mainView = new app.optimization.MainView();
+            mainView.render();
+        });
+    </script>
+</body>
+</html>

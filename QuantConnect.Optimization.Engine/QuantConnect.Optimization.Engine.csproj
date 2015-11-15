@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Web\Content\js\optimization.js" />
+    <Content Include="Web\Views\execution.html" />
     <Content Include="Web\Views\source.html" />
     <Content Include="Web\Views\optimization.html" />
   </ItemGroup>

@@ -1,4 +1,5 @@
-﻿var app = app || {};
+﻿
+var app = app || {};
 app.optimization = app.optimization || {};
 
 
@@ -18,7 +19,7 @@ app.optimization.TestList = Backbone.Collection.extend({
 app.optimization.MainView = Backbone.Marionette.ItemView.extend({
     el: '#main-view',
     template: false,
-    data:{},
+    data: {},
 
     ui: {
         ddDimentions: '#dd-dimentions',
@@ -34,93 +35,102 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
         'change @ui.ddParameter2': 'renderChart'
     },
 
-    initialize: function () {
+    initialize: function() {
         console.log('main view: init');
     },
 
-    onRender: function () {
+    onRender: function() {
         console.log('main view: onRender');
         var self = this;
 
-        $.getJSON('/api/optimization/dimentions', function (data) {
+        $.getJSON('/api/optimization/dimentions', function(data) {
             console.log('dimentions', data);
+            var dimDict = {};
             _.each(data, function(item) {
-                //todo: take care of this in server side
-                var val = item.name.charAt(0).toLowerCase() + item.name.slice(1);
-                $('#dd-dimentions').append('<option value="' + val + '">' + item.name + '</option>');
+                dimDict[item.key] = item;
+                $('#dd-dimentions').append('<option value="' + item.key + '">' + item.category + '.' + item.name + '</option>');
             });
+            console.log('dimDict', dimDict)
+            self.data.dimDict = dimDict;
         });
 
-        $.getJSON('/api/optimization/parameters', function (data) {
+        $.getJSON('/api/optimization/parameters', function(data) {
             console.log('parameters', data);
-            _.each(data, function (item) {
-                //todo: take care of this in server side
+            _.each(data, function(item) {
+                // need to lower case the first letter to mach the json data returned from server
                 var val = item.name.charAt(0).toLowerCase() + item.name.slice(1);
                 $(self.ui.ddParameter1).append('<option value="' + val + '">' + item.name + '</option>');
                 $(self.ui.ddParameter2).append('<option value="' + val + '">' + item.name + '</option>');
             });
         });
 
-        $.getJSON('/api/optimization/stats', function(data){
-          console.log('stats', data);
-          self.data.stats = data;
-          self.renderTable(data);
+        $.getJSON('/api/optimization/stats', function(data) {
+            console.log('stats', data);
+            self.data.stats = data;
+            // make sure we have dimDict before render
+            var int = setInterval(function() {
+                if (self.data.dimDict) {
+                    self.renderTable(data);
+                    clearInterval(int);
+                }
+            }, 1);
+
         })
     },
 
-    renderTable: function(stats){
-        if(stats == null || stats.length == 0)
+    renderTable: function(stats) {
+        if (stats == null || stats.length == 0)
             return;
         var self = this;
 
         // render header
         var first = stats[0];
-        var trHead = $('<tr><th>Test</th></td>');
-        _.each(first.parameters, function(val, key){
+        var trHead = $('<tr><th>Exe</th></td>');
+        _.each(first.parameters, function(val, key) {
             trHead.append('<th>' + key + '</th>');
         });
-        _.each(first.values, function(val, key){
-            if(key.indexOf('summary') == 0)
-                trHead.append('<th>' + key.replace('summary.', '') + '</th>');
+        _.each(first.values, function(val, key) {
+            if (key.indexOf('summary') == 0)
+                trHead.append('<th>' + self.data.dimDict[key].name + '</th>');
         });
         self.ui.tblStats.find('thead').append(trHead);
 
         // render body
-        _.each(stats, function(item){
-            var tr = $('<tr><td>' + item.testId + '</td></tr>');
-            _.each(item.parameters, function(val, key){
+        _.each(stats, function(item) {
+            var tr = $('<tr><td>' + item.exId + '</td></tr>');
+            _.each(item.parameters, function(val, key) {
                 tr.append('<td>' + val + '</td>');
             });
-            _.each(item.values, function(val, key){
-                if(key.indexOf('summary') == 0)
+            _.each(item.values, function(val, key) {
+                if (key.indexOf('summary') == 0)
                     tr.append('<td>' + val + '</td>');
             });
             self.ui.tblStats.find('tbody').append(tr);
         });
     },
 
-    renderChart: function () {
+    renderChart: function() {
         var self = this;
         var param1 = this.ui.ddParameter1.val();
         var param2 = this.ui.ddParameter2.val();
         var dim = this.ui.ddDimentions.val();
         console.log('renderChart', dim, param1, param2);
 
-        if(param2 != '' && param2 != param1){
+        if (param2 != '' && param2 != param1) {
             self.renderChartTwoParam(param1, param2, dim);
-        }else{
+        } else {
             self.renderChartOneParam(param1, dim);
         }
 
     },
 
-    renderChartOneParam: function(param1, dim){
+    renderChartOneParam: function(param1, dim) {
         var self = this;
         var series = {
             name: param1,
             data: []
         };
-        series.data = _.map(self.data.stats, function(item){
+        series.data = _.map(self.data.stats, function(item) {
             return {
                 x: item.parameters[param1],
                 y: item.values[dim]
@@ -171,34 +181,34 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
         self.ui.chartWrapper.highcharts(options);
     },
 
-    renderChartTwoParam: function(param1, param2, dim){
+    renderChartTwoParam: function(param1, param2, dim) {
         var self = this;
         self.ui.chartWrapper.empty();
-        var data =[{
+        var data = [{
             type: 'scatter3d',
-            mode:"markers",
-            x: _.map(self.data.stats, function(item){
+            mode: "markers",
+            x: _.map(self.data.stats, function(item) {
                 return item.parameters[param1];
             }),
-            y: _.map(self.data.stats, function(item){
+            y: _.map(self.data.stats, function(item) {
                 return item.parameters[param2];
             }),
-            z: _.map(self.data.stats, function(item){
+            z: _.map(self.data.stats, function(item) {
                 return item.values[dim];
             })
         }];
         console.log('plotly', data);
         var layout = {
-          title: 'Mt Bruno Elevation',
-          autosize: false,
-          //width: 500,
-          //height: 500,
-          margin: {
-            l: 65,
-            r: 50,
-            b: 65,
-            t: 90
-          }
+            title: 'Mt Bruno Elevation',
+            autosize: false,
+            //width: 500,
+            //height: 500,
+            margin: {
+                l: 65,
+                r: 50,
+                b: 65,
+                t: 90
+            }
         };
         Plotly.newPlot(self.ui.chartWrapper.get(0), data, layout);
     }

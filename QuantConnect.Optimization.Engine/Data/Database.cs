@@ -27,7 +27,7 @@ namespace QuantConnect.Optimization.Engine.Data
             var conn = Connection();
 
             // add test
-            var testId = (int)conn.Insert(new Test
+            var exId = (int)conn.Insert(new Execution
             {
                 Desc = string.Join(",", permutation.Select(x => string.Format("{0}:{1}", x.Key, x.Value.Item2)))
             });
@@ -37,42 +37,44 @@ namespace QuantConnect.Optimization.Engine.Data
             {
                 conn.Insert(new Parameter
                 {
-                    TestId = testId,
+                    ExId = exId,
                     Name = paramater.Key,
                     Value =  Convert.ToDouble(paramater.Value.Item2)
                 });
             }
 
 
-            return testId;
+            return exId;
         }
 
-        public void InsertStatistics(StatisticsResults stats, int testId)
+        public void InsertStatistics(StatisticsResults stats, int exId)
         {
             var conn = Connection();
 
             // save summary
             foreach (var item in stats.Summary)
             {
-                conn.Insert(new Stat(testId, string.Format("Summary.{0}", item.Key), item.Value));
+                conn.Insert(new Stat(exId, item.Key, item.Value, "Summary"));
             }
 
             // save trade statistics
             foreach (var pi in stats.TotalPerformance.TradeStatistics.GetType().GetProperties())
             {
                 conn.Insert(new Stat(
-                    testId,
-                    string.Format("Trade.{0}", pi.Name),
-                    pi.GetValue(stats.TotalPerformance.TradeStatistics).ToString()));
+                    exId,
+                    pi.Name,
+                    pi.GetValue(stats.TotalPerformance.TradeStatistics).ToString(),
+                    "Trade"));
             }
 
             // save trade Portfolio Statistics
             foreach (var pi in stats.TotalPerformance.PortfolioStatistics.GetType().GetProperties())
             {
                 conn.Insert(new Stat(
-                    testId,
-                    string.Format("Portfolio.{0}", pi.Name),
-                    pi.GetValue(stats.TotalPerformance.PortfolioStatistics).ToString()));
+                    exId,
+                    pi.Name,
+                    pi.GetValue(stats.TotalPerformance.PortfolioStatistics).ToString(),
+                    "Portfolio"));
             }
 
             // save trades
@@ -80,7 +82,7 @@ namespace QuantConnect.Optimization.Engine.Data
             {
                 conn.Insert(new Trade
                 {
-                    TestId = testId,
+                    ExId = exId,
                     Direction = (int) t.Direction,
                     Duration = t.Duration.TotalSeconds,
                     EndTradeDrawdown = t.EndTradeDrawdown,
@@ -98,7 +100,7 @@ namespace QuantConnect.Optimization.Engine.Data
             }
         }
 
-        public void InsertCharts(IEnumerable<QuantConnect.Chart> charts, int testId)
+        public void InsertCharts(IEnumerable<QuantConnect.Chart> charts, int exId)
         {
             var conn = Connection();
 
@@ -108,7 +110,7 @@ namespace QuantConnect.Optimization.Engine.Data
                 {
                     ChartType = (int) chart.ChartType,
                     Name = chart.Name,
-                    TestId = testId
+                    ExId = exId
                 });
             }
         }
@@ -121,20 +123,20 @@ namespace QuantConnect.Optimization.Engine.Data
             var conn = Connection();
 
             var sql = @"
-                create table if not exists Test (
+                create table if not exists Execution (
                     Id INTEGER PRIMARY KEY,
                     Desc text
                 );
 
                 create table if not exists Parameter (
-                    TestId int,
+                    ExId int,
                     Name text,
                     Value double
                 );
 
                 create table if not exists Chart (
                     Id INTEGER PRIMARY KEY,
-                    TestId int,
+                    ExId int,
                     Name text,
                     ChartType int
                 );
@@ -154,15 +156,17 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists Stat (
-                    TestId int,
+                    ExId int,
+                    Key text,
                     Name text,
+                    Category text,
                     Value double,
                     Unit text
                 );
 
                 create table if not exists [Order] (
                     OrderId int,
-                    TestId int,
+                    ExId int,
                     Type int,
                     Time int,
                     Price double,
@@ -173,7 +177,7 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists Trade (
-                    TestId int,
+                    ExId int,
                     EntryTime int,
                     EntryPrice double,
                     ExitTime int,
@@ -200,8 +204,8 @@ namespace QuantConnect.Optimization.Engine.Data
 
     }
 
-    [Table("Test")]
-    public class Test
+    [Table("Execution")]
+    public class Execution
     {
         public int Id { get; set; }
         public string Desc { get; set; }
@@ -210,7 +214,7 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("Parameter")]
     public class Parameter
     {
-        public int TestId { get; set; }
+        public int ExId { get; set; }
         public string Name { get; set; }
         public double Value { get; set; }
     }
@@ -219,7 +223,7 @@ namespace QuantConnect.Optimization.Engine.Data
     public class Chart
     {
         public int Id { get; set; }
-        public int TestId { get; set; }
+        public int ExId { get; set; }
         public string Name { get; set; }
         public int ChartType { get; set; }
     }
@@ -247,10 +251,14 @@ namespace QuantConnect.Optimization.Engine.Data
     {
         public Stat() { }
 
-        public Stat(int testId, string name, string strVal)
+        public Stat(int exId, string name, string strVal, string category)
         {
-            TestId = testId;
+            ExId = exId;
             Name = name;
+            Category = category;
+
+            // gen key from name category
+            Key = string.Format("{0}-{1}", category, name).ToLower().Replace(" ", "-").Trim();
 
             // check for % unit
             if (strVal.Contains("%"))
@@ -290,8 +298,10 @@ namespace QuantConnect.Optimization.Engine.Data
             }
         }
 
-        public int TestId { get; set; }
+        public int ExId { get; set; }
+        public string Key { get; set; }
         public string Name { get; set; }
+        public string Category { get; set; }
         public double Value { get; set; }
         public string Unit { get; set; }
     }
@@ -300,7 +310,7 @@ namespace QuantConnect.Optimization.Engine.Data
     public class Order
     {
         public int OrderId { get; set; }
-        public int TestId { get; set; }
+        public int ExId { get; set; }
         public int Type { get; set; }
         public long Time { get; set; }
         public decimal Price { get; set; }
@@ -313,7 +323,7 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("Trade")]
     public class Trade
     {
-        public int TestId { get; set; }
+        public int ExId { get; set; }
         public long EntryTime { get; set; }
         public decimal EntryPrice { get; set; }
         public long ExitTime { get; set; }

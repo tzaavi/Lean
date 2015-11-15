@@ -1,21 +1,25 @@
-﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta charset="utf-8" />
     <title></title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 </head>
+
 <body>
     <h3>Select Data Source</h3>
-        @Each.Files
-            <a href="/source/@Current.File">@Current.File</a>
-        @EndEach
-        
+    @Each.Files
+        <div><a href="/source/@Current.File">@Current.File</a></div>
+    @EndEach
 
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/momentjs/2.10.6/moment.min.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.10.6/moment.min.js"></script>
+    <script src="http://code.highcharts.com/stock/highstock.js"></script>
 </body>
+
 </html>
