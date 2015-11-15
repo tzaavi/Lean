@@ -62,29 +62,22 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
             Get["/api/optimization/dimentions"] = parameters =>
             {
                 var conn = _db.Connection();
-                return conn.Query("select distinct(Key) from Stat");
+                return conn.Query("select distinct(Name) from Stat");
             };
 
-            Get["/api/ptimization/chart"] = parameters =>
+            Get["/api/optimization/stats"] = parameters =>
             {
-                var dim = Request.Query["dim"];
-                var param1 = Request.Query["param1"];
-                var param2 = Request.Query["param2"];
-
                 var conn = _db.Connection();
 
-                var valueList = conn.Query<Stat>("select * from Stat where Key = @Key", new {Key = dim}).ToList();
-                var paramList = conn.Query<Parameter>("select * from Parameter where Name in @Names", new {Names = new[]{param1, param2}}).ToList();
+                var valueList = conn.Query<Stat>("select * from Stat").ToList();
+                var paramList = conn.Query<Parameter>("select * from Parameter").ToList();
 
                 return paramList.GroupBy(x => x.TestId).Select(x =>
                 {
-                    var test = new ExpandoObject() as IDictionary<string, Object>;
-                    test["Id"] = x.Key;
-                    foreach (var p in x)
-                    {
-                        test[p.Name] = p.Value;
-                    }
-                    test["Value"] = valueList.First(v => v.TestId == x.Key).Value;
+                    dynamic test = new ExpandoObject();
+                    test.TestId = x.Key;
+                    test.Parameters = x.OrderBy(p => p.Name).ToDictionary(p => p.Name, p => p.Value);
+                    test.Values = valueList.OrderBy(v => v.Name).Where(v => v.TestId == x.Key).ToDictionary(v => v.Name, v => v.Value);
                     return test;
                 });
             };

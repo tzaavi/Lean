@@ -125,7 +125,7 @@ namespace QuantConnect.Optimization.Engine
                 Console.WriteLine("Nancy now listening - navigating to http://localhost:8888/. Press enter to stop");
                 try
                 {
-                    Process.Start("http://localhost:8888/");
+                    Process.Start("http://localhost:8888/optimization");
                 }
                 catch (Exception)
                 {

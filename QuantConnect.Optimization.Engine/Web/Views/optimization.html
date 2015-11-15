@@ -8,30 +8,41 @@
 </head>
 <body>
 
-<div id="main-view">
-    <select id="dd-dimentions"></select>
-    <select id="dd-parameter1"></select>
-    <select id="dd-parameter2"><option></option></select>
-
-    <a class="btn">dfsdf</a>
-</div>
+    <div id="main-view">
 
 
-        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.marionette/2.4.1/backbone.marionette.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/momentjs/2.10.6/moment.min.js"></script>
-        <script src="http://code.highcharts.com/stock/highstock.js"></script>
-        <script src="/content/js/optimization.js"></script>
+        <div>
+            <table id="tbl-stats" class="table table-striped table-condensed">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
 
-        <script>
-            $(function () {
-                var mainView = new app.optimization.MainView();
-                mainView.render();
-         
-            });
-        </script>
+        <div>
+            <select id="dd-dimentions"></select>
+            <select id="dd-parameter1"></select>
+            <select id="dd-parameter2"><option></option></select>
+        </div>
+
+        <div id="chart-wrapper"><div>
+    </div>
+
+
+    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.marionette/2.4.1/backbone.marionette.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="//cdn.jsdelivr.net/momentjs/2.10.6/moment.min.js"></script>
+    <script src="//code.highcharts.com/stock/highstock.js"></script>
+    <script src="http://code.highcharts.com/highcharts-3d.js"></script>
+    <script src="/content/js/optimization.js"></script>
+
+    <script>
+        $(function () {
+            var mainView = new app.optimization.MainView();
+            mainView.render();
+        });
+    </script>
 </body>
 </html>

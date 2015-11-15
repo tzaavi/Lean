@@ -54,7 +54,7 @@ namespace QuantConnect.Optimization.Engine.Data
             // save summary
             foreach (var item in stats.Summary)
             {
-                conn.Insert(new Stat(testId, item.Key, item.Value));
+                conn.Insert(new Stat(testId, string.Format("Summary.{0}", item.Key), item.Value));
             }
 
             // save trade statistics
@@ -155,7 +155,7 @@ namespace QuantConnect.Optimization.Engine.Data
 
                 create table if not exists Stat (
                     TestId int,
-                    Key text,
+                    Name text,
                     Value double,
                     Unit text
                 );
@@ -247,10 +247,10 @@ namespace QuantConnect.Optimization.Engine.Data
     {
         public Stat() { }
 
-        public Stat(int testId, string key, string strVal)
+        public Stat(int testId, string name, string strVal)
         {
             TestId = testId;
-            Key = key;
+            Name = name;
 
             // check for % unit
             if (strVal.Contains("%"))
@@ -291,7 +291,7 @@ namespace QuantConnect.Optimization.Engine.Data
         }
 
         public int TestId { get; set; }
-        public string Key { get; set; }
+        public string Name { get; set; }
         public double Value { get; set; }
         public string Unit { get; set; }
     }
