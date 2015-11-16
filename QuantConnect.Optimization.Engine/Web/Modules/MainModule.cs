@@ -48,7 +48,7 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 return conn.Query<Execution>("select * from Execution");
             };
 
-            Get["/api/optimization/parameters"] = parameters =>
+            /*Get["/api/optimization/parameters"] = parameters =>
             {
                 var conn = _db.Connection();
                 return conn.Query("select distinct(Name) from Parameter");
@@ -58,16 +58,19 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
             {
                 var conn = _db.Connection();
                 return conn.Query("select Key, Name, Category from Stat group by Key, Name, Category");
-            };
+            };*/
 
             Get["/api/optimization/stats"] = parameters =>
             {
                 var conn = _db.Connection();
-
                 var statList = conn.Query<Stat>("select * from Stat").ToList();
                 var paramList = conn.Query<Parameter>("select * from Parameter").ToList();
 
-                return paramList.GroupBy(x => x.ExId).Select(x =>
+                dynamic data = new ExpandoObject();
+                data.Parameters = paramList.GroupBy(p => p.Name).Select(p => p.Key);
+                data.DimDict = statList.GroupBy(s => s.Key).ToDictionary(g => g.Key, g => new{g.First().Name, g.First().Category});
+
+                data.Stats = paramList.GroupBy(x => x.ExId).Select(x =>
                 {
                     dynamic ex = new ExpandoObject();
                     ex.ExId = x.Key;
@@ -75,6 +78,8 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                     ex.Values = statList.OrderBy(s => s.Key).Where(s => s.ExId == x.Key).ToDictionary(s => s.Key, s => s.Value);
                     return ex;
                 });
+
+                return data;
             };
 
         }

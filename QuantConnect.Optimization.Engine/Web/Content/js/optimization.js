@@ -43,39 +43,25 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
         console.log('main view: onRender');
         var self = this;
 
-        $.getJSON('/api/optimization/dimentions', function(data) {
-            console.log('dimentions', data);
-            var dimDict = {};
-            _.each(data, function(item) {
-                dimDict[item.key] = item;
-                $('#dd-dimentions').append('<option value="' + item.key + '">' + item.category + '.' + item.name + '</option>');
-            });
-            console.log('dimDict', dimDict)
-            self.data.dimDict = dimDict;
-        });
-
-        $.getJSON('/api/optimization/parameters', function(data) {
-            console.log('parameters', data);
-            _.each(data, function(item) {
-                // need to lower case the first letter to mach the json data returned from server
-                var val = item.name.charAt(0).toLowerCase() + item.name.slice(1);
-                $(self.ui.ddParameter1).append('<option value="' + val + '">' + item.name + '</option>');
-                $(self.ui.ddParameter2).append('<option value="' + val + '">' + item.name + '</option>');
-            });
-        });
-
         $.getJSON('/api/optimization/stats', function(data) {
             console.log('stats', data);
-            self.data.stats = data;
-            // make sure we have dimDict before render
-            var int = setInterval(function() {
-                if (self.data.dimDict) {
-                    self.renderTable(data);
-                    clearInterval(int);
-                }
-            }, 1);
-
+            self.data = data;
+            self.renderDropDowns();
+            self.renderTable(data.stats);
         })
+    },
+
+    renderDropDowns: function(){
+        var self = this;
+        _.each(this.data.dimDict, function(item, key) {
+            $('#dd-dimentions').append('<option value="' + key + '">' + item.category + '.' + item.name + '</option>');
+        });
+        _.each(this.data.parameters, function(item) {
+            // need to lower case the first letter to mach the json data returned from server
+            var val = item.charAt(0).toLowerCase() + item.slice(1);
+            $(self.ui.ddParameter1).append('<option value="' + val + '">' + item + '</option>');
+            $(self.ui.ddParameter2).append('<option value="' + val + '">' + item + '</option>');
+        });
     },
 
     renderTable: function(stats) {
