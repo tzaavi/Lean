@@ -107,17 +107,49 @@ namespace QuantConnect.Optimization.Engine.Data
 
             foreach (var chart in charts)
             {
-                conn.Insert(new Chart
+                var chartId = conn.Insert(new Chart
                 {
                     ChartType = (int) chart.ChartType,
                     Name = chart.Name,
                     ExId = exId
                 });
+
+                foreach (var s in chart.Series)
+                {
+                    var seriesId = conn.Insert(new ChartSeries
+                    {
+                        ChartId = (int) chartId,
+                        Name = s.Value.Name,
+                        SeriesType = (int) s.Value.SeriesType,
+                        Unit = s.Value.Unit
+                    });
+
+
+                    conn.Open();
+                    var cmd = conn.CreateCommand();
+                    using (var trans = conn.BeginTransaction())
+                    {
+                        foreach (var point in s.Value.Values)
+                        {
+                            cmd.CommandText = string.Format("insert into ChartPoint(Time, Value) values ({0}, {1});", point.x, point.y);
+                            cmd.ExecuteNonQuery();
+
+                            /*conn.Insert(new ChartPoint
+                            {
+                                SeriesId = (int)seriesId,
+                                Time = point.x,
+                                Value = point.y
+                            });*/
+                        }
+                        
+                        trans.Commit();
+                        conn.Close();
+                    }
+                    
+              
+                }
             }
         }
-
-        //var res = db.DB.Query<Order>("select * from [Order] where PermutationId = 1");
-        //var res = db.Query<ChartPoint>("select PermutationId = @PermutationId", new { PermutationId = 12});
 
         private void CreateSchema()
         {
@@ -151,7 +183,7 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists ChartPoint (
-                    ChartId int,
+                    SeriesId int,
                     Time int,
                     Value double
                 );

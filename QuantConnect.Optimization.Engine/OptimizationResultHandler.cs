@@ -567,7 +567,7 @@ namespace QuantConnect.Optimization.Engine
                 SampleEquity(time, Math.Round(_algorithm.Portfolio.TotalPortfolioValue, 4));
 
                 //Also add the user samples / plots to the result handler tracking:
-                SampleRange(_algorithm.GetChartUpdates());
+                SampleRange(_algorithm.GetChartUpdates(true)); // pass true to clear chart data couse we want all chanrt points
 
                 //Sample the asset pricing:
                 foreach (var security in _algorithm.Securities.Values)
