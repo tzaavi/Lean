@@ -39,26 +39,8 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
 
             Get["/executions/{id}"] = parameters =>
             {
-                return View["Execution"];
+                return View["Execution", new {ExId = parameters.id}];
             };
-
-            Get["/api/executions"] = parameters =>
-            {
-                var conn = _db.Connection();
-                return conn.Query<Execution>("select * from Execution");
-            };
-
-            /*Get["/api/optimization/parameters"] = parameters =>
-            {
-                var conn = _db.Connection();
-                return conn.Query("select distinct(Name) from Parameter");
-            };
-
-            Get["/api/optimization/dimentions"] = parameters =>
-            {
-                var conn = _db.Connection();
-                return conn.Query("select Key, Name, Category from Stat group by Key, Name, Category");
-            };*/
 
             Get["/api/optimization/stats"] = parameters =>
             {
@@ -80,6 +62,18 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 });
 
                 return data;
+            };
+
+            Get["/api/executions/{id}/stats"] = parameters =>
+            {
+                var conn = _db.Connection();
+                return conn.Query<Stat>("select * from Stat where ExId = @ExId", new {ExId = parameters.id}).ToList();
+            };
+
+            Get["/api/executions/{id}/trades"] = parameters =>
+            {
+                var conn = _db.Connection();
+                return conn.Query<Trade>("select * from Trade where ExId = @ExId", new { ExId = parameters.id }).ToList();
             };
 
         }

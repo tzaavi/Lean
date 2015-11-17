@@ -1,0 +1,39 @@
+#page-wrapper {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    background-color: #f1f3f6;
+}
+
+#menu {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 5px;
+    height: 35px;
+}
+
+#main {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    top: 45px;
+    border: 1px #aaa solid;
+    background-color: #fff;
+}
+
+#summary {
+    background-color: #f9f9f9;
+}
+
+.modal .btn-group.seriers {
+    margin-bottom: 10px;
+    margin-right: 10px;
+}
+
+.modal .panel select {
+    width: initial;
+}

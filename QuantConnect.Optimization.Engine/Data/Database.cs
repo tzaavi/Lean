@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using Dapper.Contrib.Extensions;
+using Newtonsoft.Json;
 using QuantConnect.Statistics;
 
 namespace QuantConnect.Optimization.Engine.Data
@@ -333,7 +334,9 @@ namespace QuantConnect.Optimization.Engine.Data
         public int Direction { get; set; }
         public decimal ProfitLoss { get; set; }
         public decimal TotalFees { get; set; }
+        [JsonProperty("mae")]
         public decimal MAE { get; set; }
+        [JsonProperty("mfe")]
         public decimal MFE { get; set; }
         public double Duration { get; set; }
         public decimal EndTradeDrawdown { get; set; }

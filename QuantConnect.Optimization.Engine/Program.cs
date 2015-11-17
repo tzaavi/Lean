@@ -64,7 +64,7 @@ namespace QuantConnect.Optimization.Engine
             foreach (var permutation in GetPermutations())
             {
                 // init system nahdlers
-                var leanEngineSystemHandlers = new LeanEngineSystemHandlers(new JobQueue(), new Api.Api(), new Messaging.Messaging()); //LeanEngineSystemHandlers.FromConfiguration(Composer.Instance);
+                var leanEngineSystemHandlers = new LeanEngineSystemHandlers(new JobQueue(), new Api.Api(), new Messaging.Messaging());
                 leanEngineSystemHandlers.Initialize();
 
                 // init new result instaqance

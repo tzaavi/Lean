@@ -51,7 +51,7 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
         })
     },
 
-    renderDropDowns: function(){
+    renderDropDowns: function() {
         var self = this;
         _.each(this.data.dimDict, function(item, key) {
             $('#dd-dimentions').append('<option value="' + key + '">' + item.category + '.' + item.name + '</option>');
@@ -83,7 +83,7 @@ app.optimization.MainView = Backbone.Marionette.ItemView.extend({
 
         // render body
         _.each(stats, function(item) {
-            var tr = $('<tr><td>' + item.exId + '</td></tr>');
+            var tr = $('<tr><td><a href="/executions/' + item.exId + '">' + item.exId + '<i class="glyphicon glyphicon-new-window"></i></a></td></tr>');
             _.each(item.parameters, function(val, key) {
                 tr.append('<td>' + val + '</td>');
             });

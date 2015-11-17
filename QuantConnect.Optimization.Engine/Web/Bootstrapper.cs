@@ -1,6 +1,9 @@
 ﻿using System.IO;
 using System.Reflection;
 using Nancy;
+using Nancy.TinyIoc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace QuantConnect.Optimization.Engine.Web
 {
@@ -9,6 +12,13 @@ namespace QuantConnect.Optimization.Engine.Web
         protected override IRootPathProvider RootPathProvider
         {
             get { return new CustomRootPathProvider(); }
+        }
+
+        protected override void ConfigureApplicationContainer(TinyIoCContainer container)
+        {
+            base.ConfigureApplicationContainer(container);
+
+            container.Register<JsonSerializer, CustomJsonSerializer>();
         }
     }
 
@@ -24,5 +34,15 @@ namespace QuantConnect.Optimization.Engine.Web
 
             return Path.Combine(appDir, "Web");
         }
+    }
+
+    public class CustomJsonSerializer : JsonSerializer
+    {
+        public CustomJsonSerializer()
+        {
+            this.ContractResolver = new CamelCasePropertyNamesContractResolver();
+        }
+
+        
     }
 }
