@@ -76,6 +76,34 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 return conn.Query<Trade>("select * from Trade where ExId = @ExId", new { ExId = parameters.id }).ToList();
             };
 
+            Get["/api/executions/{id}/charts"] = parameters =>
+            {
+                var conn = _db.Connection();
+                return conn.Query<Data.Chart>("select * from Chart where ExId = @ExId", new { ExId = parameters.id }).ToList();
+            };
+
+            Get["/api/executions/{exId}/charts/{chartId}"] = parameters =>
+            {
+                var conn = _db.Connection();
+                var chart = conn.Query<Data.Chart>("select * from Chart where Id = @Id", new { Id = parameters.chartId }).First();
+                var series = conn.Query<ChartSeries>("select * from ChartSeries where ChartId = @ChartId", new {ChartId = parameters.chartId}).ToList();
+            
+                //todo: add chart id to chartPoint so we can get all chart point in one query
+
+                dynamic ret = new ExpandoObject();
+                ret.chartType = chart.ChartType;
+                ret.name = chart.Name;
+                ret.id = chart.Id;
+
+                ret.series = series.Select(x => new
+                {
+                    name = x.Name,
+                    seriesType = x.SeriesType,
+                    points = conn.Query<Data.ChartPoint>("select * from ChartPoint where SeriesId = @SeriesId", new {SeriesId = x.Id}).ToList()
+                });
+
+                return ret;
+            };
         }
 
         private List<dynamic> GetSourceFiles()

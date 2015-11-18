@@ -118,22 +118,7 @@ var app = {};
         chartsDropdown: null,
 
         init: function () {
-            this.chartsDropdown = $('#charts-dropdown');
-
-            // init charts dropdown
-            var ul = this.chartsDropdown;
-            $.each(_data["Charts"], function (name, item) {
-                var a = $('<a href="#">' + name + '</a>');
-                var li = $('<li></li>');
-                li.append(a);
-                ul.prepend(li);
-                a.click(function () {
-                    console.log('click', name);
-                    app.chartRender.render(name);
-                    $('#btn-show-trade-markers').show();
-                    $('#btn-hide-trade-markers').hide();
-                });
-            });
+            this.renderChartMenu();
 
             $('#analyze-dropdown a').click(function () {
                 var type = $(this).data('type');
@@ -156,6 +141,25 @@ var app = {};
                 $('#btn-hide-trade-markers').hide();
             });
 
+        },
+
+        renderChartMenu: function(){
+            $.getJSON('/api/executions/' + _executionId + '/charts', function(charts) {
+                console.log('charts--', charts);
+                var ul = $('#charts-dropdown');
+                _.each(charts, function(item){
+                    var a = $('<a href="#">' + item.name + '</a>');
+                    var li = $('<li></li>');
+                    li.append(a);
+                    ul.prepend(li);
+                    a.click(function () {
+                        console.log('click', item.name, item.id);
+                        app.chartRender.laod(item.id);
+                        $('#btn-show-trade-markers').show();
+                        $('#btn-hide-trade-markers').hide();
+                    });
+                });
+            });
         }
 
     };
@@ -168,7 +172,48 @@ var app = {};
     app.chartRender = {
         plots: [],
 
-        render: function (chartName) {
+        laod: function(chartId) {
+            var self = this;
+            $.getJSON('/api/executions/' + _executionId + '/charts/' + chartId, function(chart) {
+                console.log('chart data', chart);
+                var open = null;
+                var high = null;
+                var close = null;
+                var low = null;
+                _.each(chart.series, function(s) {
+                    if(s.name == 'Open') { open = s.points; }
+                    if(s.name == 'High') { high = s.points; }
+                    if(s.name == 'Low') { low = s.points; }
+                    if(s.name == 'Close') { close = s.points; }
+                });
+                if(open && high && close && low) {
+                    var ohlc = _.map(open, function(item, i){
+                        return {
+                            time: item.time,
+                            o: item.value,
+                            h: high[i].value,
+                            l: low[i].value,
+                            c: close[i].value
+                        };
+                    });
+                    var newSeries = [];
+                    newSeries.push({
+                        name: 'OHLC',
+                        points: ohlc
+                    });
+                    _.each(chart.series, function(s) {
+                        if(s.name != 'Open' && s.name != 'High' && s.name != 'Low' && s.name && 'Close') {
+                            newSeries.push(s);
+                        }
+                    });
+                    chart.series = newSeries;
+                }
+                console.log('chart data after ohlc', chart);
+                self.render(chart)
+            });
+        },
+
+        render: function (chart) {
             var self = this;
 
             // chart options
@@ -215,30 +260,29 @@ var app = {};
             }
 
             // get data by chart name
-            var chart = _data["Charts"][chartName];
-            var series1 = $.map(chart.Series, function (s) {
+            var series1 = $.map(chart.series, function (s) {
                 var track = {
-                    name: s.Name,
-                    type: app.helpers.getSeriesType(s.SeriesType),
+                    name: s.name,
+                    type: app.helpers.getSeriesType(s.seriesType),
                     symbol: 'none'
                 };
                 track.data = [];
 
-                if(s.Name == 'OHLC') {
+                if(s.name == 'OHLC') {
                   track.type = 'candlestick'
                 }
 
-                $.each(s.Values, function (k, item) {
+                _.each(s.points, function (item) {
                     var time;
-                    if (isNaN(item.x)) {
-                        time = moment(item.x).toDate();
+                    if (isNaN(item.time)) {
+                        time = moment(item.time).toDate();
                     } else {
-                        time = item.x * 1000;
+                        time = item.time * 1000;
                     }
                     if(track.type == 'candlestick') {
                       track.data.push([time, item.o, item.h, item.l, item.c]);
                     } else {
-                      track.data.push([time, item.y]);
+                      track.data.push([time, item.value]);
                     }
                 });
                 return track;
@@ -246,11 +290,11 @@ var app = {};
             console.log('chart series: ', series1);
 
             // construct plots base on chart type (stack, overlay)
-            if (chart["ChartType"] == 0) { // overlay
+            if (chart.chartType == 0) { // overlay
                 this.plots = [{ series: series1 }];
             }
 
-            if (chart["ChartType"] == 1) { // stack
+            if (chart.chartType == 1) { // stack
                 this.plots = $.map(series1, function (item) {
                     return { series: [item] };
                 });
@@ -565,11 +609,11 @@ $(function () {
         if (series.hasOwnProperty('Open') && series.hasOwnProperty('High') && series.hasOwnProperty('Low') && series.hasOwnProperty('Close')) {
             var ohlc = $.map(series['Open'].Values, function(val, i) {
                 return {
-                    x: val.x,
-                    o: val.y,
-                    h: series['High'].Values[i].y,
-                    l: series['Low'].Values[i].y,
-                    c: series['Close'].Values[i].y
+                    time: val.time,
+                    o: val.value,
+                    h: series['High'].Values[i].value,
+                    l: series['Low'].Values[i].value,
+                    c: series['Close'].Values[i].value
                 }
             });
             console.log('OHLC', ohlc);
@@ -589,7 +633,7 @@ $(function () {
 
 
     // render chart with cahrt builder data
-    app.chartRender.render('Strategy Equity');
+    //app.chartRender.render('Strategy Equity');
     //app.chartRender.renderMaxExcursion('MFE');
 
     // render stats

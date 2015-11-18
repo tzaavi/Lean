@@ -126,24 +126,20 @@ namespace QuantConnect.Optimization.Engine.Data
 
 
                     conn.Open();
-                    var cmd = conn.CreateCommand();
                     using (var trans = conn.BeginTransaction())
                     {
                         foreach (var point in s.Value.Values)
                         {
-                            cmd.CommandText = string.Format("insert into ChartPoint(Time, Value) values ({0}, {1});", point.x, point.y);
-                            cmd.ExecuteNonQuery();
-
-                            /*conn.Insert(new ChartPoint
+                            conn.Insert(new ChartPoint
                             {
                                 SeriesId = (int)seriesId,
                                 Time = point.x,
                                 Value = point.y
-                            });*/
+                            });
                         }
                         
                         trans.Commit();
-                        conn.Close();
+                       conn.Close();
                     }
                     
               
