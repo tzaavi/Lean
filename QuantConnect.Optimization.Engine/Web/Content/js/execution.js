@@ -175,46 +175,83 @@ var app = {};
         laod: function(chartId) {
             var self = this;
             $.getJSON('/api/executions/' + _executionId + '/charts/' + chartId, function(chart) {
-                console.log('chart data', chart);
-                var open = null;
-                var high = null;
-                var close = null;
-                var low = null;
-                _.each(chart.series, function(s) {
-                    if(s.name == 'Open') { open = s.points; }
-                    if(s.name == 'High') { high = s.points; }
-                    if(s.name == 'Low') { low = s.points; }
-                    if(s.name == 'Close') { close = s.points; }
-                });
-                if(open && high && close && low) {
-                    var ohlc = _.map(open, function(item, i){
-                        return {
-                            time: item.time,
-                            o: item.value,
-                            h: high[i].value,
-                            l: low[i].value,
-                            c: close[i].value
-                        };
-                    });
-                    var newSeries = [];
-                    newSeries.push({
-                        name: 'OHLC',
-                        points: ohlc
-                    });
-                    _.each(chart.series, function(s) {
-                        if(s.name != 'Open' && s.name != 'High' && s.name != 'Low' && s.name && 'Close') {
-                            newSeries.push(s);
-                        }
-                    });
-                    chart.series = newSeries;
-                }
-                console.log('chart data after ohlc', chart);
-                self.render(chart)
+                //console.log('chart data', chart);
+                self.render(self.alterOhlcSeries(chart))
             });
+        },
+
+        alterOhlcSeries: function(chart){
+            var open = null;
+            var high = null;
+            var close = null;
+            var low = null;
+            _.each(chart.series, function(s) {
+                if(s.name == 'Open') { open = s.points; }
+                if(s.name == 'High') { high = s.points; }
+                if(s.name == 'Low') { low = s.points; }
+                if(s.name == 'Close') { close = s.points; }
+            });
+            if(open && high && close && low) {
+                var ohlc = _.map(open, function(item, i){
+                    return {
+                        time: item.time,
+                        o: item.value,
+                        h: high[i].value,
+                        l: low[i].value,
+                        c: close[i].value
+                    };
+                });
+                var newSeries = [];
+                newSeries.push({
+                    name: 'OHLC',
+                    points: ohlc
+                });
+                _.each(chart.series, function(s) {
+                    if(s.name != 'Open' && s.name != 'High' && s.name != 'Low' && s.name != 'Close') {
+                        newSeries.push(s);
+                    }
+                });
+                chart.series = newSeries;
+            }
+            //console.log('chart data after ohlc', chart);
+            return chart;
+        },
+
+        toHighchartSeries: function(series) {
+            var newSeries = $.map(series, function (s) {
+                var track = {
+                    name: s.name,
+                    type: app.helpers.getSeriesType(s.seriesType),
+                    symbol: 'none'
+                };
+                track.data = [];
+
+                if(s.name == 'OHLC') {
+                  track.type = 'candlestick'
+                }
+
+                _.each(s.points, function (item) {
+                    var time;
+                    if (isNaN(item.time)) {
+                        time = moment(item.time).toDate();
+                    } else {
+                        time = item.time * 1000;
+                    }
+                    if(track.type == 'candlestick') {
+                      track.data.push([time, item.o, item.h, item.l, item.c]);
+                    } else {
+                      track.data.push([time, item.value]);
+                    }
+                });
+                return track;
+            });
+            //console.log('highchart series: ', newSeries);
+            return newSeries;
         },
 
         render: function (chart) {
             var self = this;
+            var chartId = chart.id;
 
             // chart options
             var options = {
@@ -224,6 +261,47 @@ var app = {};
 
                 chart: {
                     zoomType: 'xy'
+                },
+
+                navigator: {
+
+                        series: {
+                            data: [
+                                [chart.minTime * 1000, null],
+                                [chart.maxTime * 1000, null]
+                            ]
+                        }
+
+                },
+
+                scrollbar: {
+                    liveRedraw: false
+                },
+
+                xAxis: {
+                    events: {
+                        afterSetExtremes: function (e) {
+                            console.log('afterSetExtremes', e)
+                            var start = Math.round(e.min / 1000);
+                            var end = Math.round(e.max / 1000);
+                            var chart = $('#chart-wrapper').highcharts();
+                            chart.showLoading('Loading data');
+                            $.getJSON('/api/executions/' + _executionId + '/charts/' + chartId + '/' + start + '/' + end, function(data) {
+                                //console.log('updated chart data', data);
+                                chart.hideLoading();
+                                data = self.alterOhlcSeries(data);
+                                series = self.toHighchartSeries(data.series);
+                                //console.log('updated highcharts series', series);
+                                var dict = _.object(_.map(series, function(x){return x.name}), _.map(series, function(x){return x.data}));
+                                //console.log('dict', dict);
+                                _.each(chart.series, function(s){
+                                    if(dict[s.name])
+                                        s.setData(dict[s.name]);
+                                });
+                                //chart.series[0].setData(series[0].data);
+                            });
+                        }
+                    }
                 },
 
                 rangeSelector: {
@@ -260,34 +338,7 @@ var app = {};
             }
 
             // get data by chart name
-            var series1 = $.map(chart.series, function (s) {
-                var track = {
-                    name: s.name,
-                    type: app.helpers.getSeriesType(s.seriesType),
-                    symbol: 'none'
-                };
-                track.data = [];
-
-                if(s.name == 'OHLC') {
-                  track.type = 'candlestick'
-                }
-
-                _.each(s.points, function (item) {
-                    var time;
-                    if (isNaN(item.time)) {
-                        time = moment(item.time).toDate();
-                    } else {
-                        time = item.time * 1000;
-                    }
-                    if(track.type == 'candlestick') {
-                      track.data.push([time, item.o, item.h, item.l, item.c]);
-                    } else {
-                      track.data.push([time, item.value]);
-                    }
-                });
-                return track;
-            });
-            console.log('chart series: ', series1);
+            var series1 = self.toHighchartSeries(chart.series);
 
             // construct plots base on chart type (stack, overlay)
             if (chart.chartType == 0) { // overlay

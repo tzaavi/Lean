@@ -87,8 +87,40 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 var conn = _db.Connection();
                 var chart = conn.Query<Data.Chart>("select * from Chart where Id = @Id", new { Id = parameters.chartId }).First();
                 var series = conn.Query<ChartSeries>("select * from ChartSeries where ChartId = @ChartId", new {ChartId = parameters.chartId}).ToList();
+
+                // get chart min, max and count
+                var min = conn.ExecuteScalar("select min(Time) from ChartPoint where ChartId = @ChartId", new { ChartId = parameters.chartId });
+                var max = conn.ExecuteScalar("select max(Time) from ChartPoint where ChartId = @ChartId", new { ChartId = parameters.chartId });
+
+                // get series counts
+                var count = conn.Query("select SeriesId, count(*) as Count from ChartPoint where ChartId = @ChartId group by SeriesId", new { ChartId = parameters.chartId })
+                    .OrderByDescending(x => x.Count).First();
+
+                // get time in specific index
+                var timeLimit = conn.ExecuteScalar("select Time from ( select Time from ChartPoint where seriesId = @SeriesId order by Time limit 500) order by time desc limit 1", new {SeriesId = (int) count.SeriesId});
             
-                //todo: add chart id to chartPoint so we can get all chart point in one query
+                dynamic ret = new ExpandoObject();
+                ret.chartType = chart.ChartType;
+                ret.name = chart.Name;
+                ret.id = chart.Id;
+                ret.minTime = min;
+                ret.maxTime = max;
+
+                ret.series = series.Select(x => new
+                {
+                    name = x.Name,
+                    seriesType = x.SeriesType,
+                    points = conn.Query<Data.ChartPoint>("select * from ChartPoint where SeriesId = @SeriesId and Time <= @Time", new {SeriesId = x.Id, Time = timeLimit}).ToList()
+                });
+
+                return ret;
+            };
+
+            Get["/api/executions/{exId}/charts/{chartId}/{start}/{end}"] = parameters =>
+            {
+                var conn = _db.Connection();
+                var chart = conn.Query<Data.Chart>("select * from Chart where Id = @Id", new { Id = parameters.chartId }).First();
+                var series = conn.Query<ChartSeries>("select * from ChartSeries where ChartId = @ChartId", new { ChartId = parameters.chartId }).ToList();
 
                 dynamic ret = new ExpandoObject();
                 ret.chartType = chart.ChartType;
@@ -99,7 +131,7 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 {
                     name = x.Name,
                     seriesType = x.SeriesType,
-                    points = conn.Query<Data.ChartPoint>("select * from ChartPoint where SeriesId = @SeriesId", new {SeriesId = x.Id}).ToList()
+                    points = conn.Query<Data.ChartPoint>("select * from ChartPoint where SeriesId = @SeriesId and Time >= @Start and Time <= @End", new { SeriesId = x.Id, Start = parameters.start, End = parameters.end }).ToList()
                 });
 
                 return ret;

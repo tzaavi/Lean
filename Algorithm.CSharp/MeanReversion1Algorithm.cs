@@ -25,19 +25,19 @@ namespace QuantConnect.Algorithm.CSharp
         private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3);
         private decimal lastShortClose;
 
-        [IntParameter(95, 100, 5)]
+        //[IntParameter(95, 100, 5)]
         public int SlowTrendSize = 100;
 
         //[DecimalParameter(0.001, 0.003, 0.0005)]
         public decimal Target = 0.002m;
 
-        [DecimalParameter(0.01, 0.03, 0.01)]
+        [DecimalParameter(0.1, 0.2, 0.1)]
         public decimal TralingStopPercent = 0.02m;
 
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);
-            SetEndDate(2014, 2, 2);
+            SetEndDate(2015, 1, 1);
             
 
             // securities

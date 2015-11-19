@@ -132,6 +132,7 @@ namespace QuantConnect.Optimization.Engine.Data
                         {
                             conn.Insert(new ChartPoint
                             {
+                                ChartId = (int)chartId,
                                 SeriesId = (int)seriesId,
                                 Time = point.x,
                                 Value = point.y
@@ -179,6 +180,7 @@ namespace QuantConnect.Optimization.Engine.Data
                 );
 
                 create table if not exists ChartPoint (
+                    ChartId int,
                     SeriesId int,
                     Time int,
                     Value double
@@ -270,6 +272,7 @@ namespace QuantConnect.Optimization.Engine.Data
     [Table("ChartPoint")]
     public class ChartPoint
     {
+        public int ChartId { get; set; }
         public int SeriesId { get; set; }
         public long Time { get; set; }
         public decimal Value { get; set; }
