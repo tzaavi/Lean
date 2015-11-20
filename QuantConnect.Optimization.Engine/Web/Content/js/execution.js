@@ -54,16 +54,6 @@ app.execution.Model = Backbone.Model.extend({
         });
     },
 
-    updateChartDate: function(start, end) {
-        var self = this;
-        var exId = this.get('executionId');
-        var charId =this.get('chartData').id;
-        $.getJSON('/api/executions/' + exId + '/charts/' + charId + '/' + start + '/' + end, function(data) {
-            data = self.alterOhlcSeries(data);
-            self.trigger('chartUpdate', data);
-        });
-    },
-
     alterOhlcSeries: function(chart){
         var open = null;
         var high = null;
@@ -107,6 +97,7 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
     el: '#main-view',
     template: false,
     data: {},
+    tradeMarkerSeries: [],
     model: null,
 
     ui: {
@@ -222,8 +213,12 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
     },
 
     renderChartMenu: function(model, charts){
+        var self = this;
         var ul = $('#charts-dropdown');
         _.each(charts, function(item){
+            if(item.name == 'Strategy Equity') {
+                self.model.loadChartData(item.id)
+            }
             var a = $('<a href="#" class="menu-item-chart">' + item.name + '</a>');
             a.data('chartId', item.id);
             var li = $('<li></li>');
@@ -305,8 +300,6 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
         $('#chart-wrapper').highcharts(options);
     },
 
-    tradeMarkerSeries: [],
-
     addTradeMarkers: function () {
         var tradesEntry = {
             name: 'Trade',
@@ -320,10 +313,10 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
         };
         tradesEntry.data = _.map(this.model.get('trades'), function (t, i) {
             return {
-                x: moment(t.EntryTime).toDate(),
-                y: t.EntryPrice,
-                direction: app.helpers.getOrderDirection(t.Direction),
-                quantity: t.Quantity,
+                x: moment(t.entryTime * 1000).toDate(),
+                y: t.entryPrice,
+                direction: app.helpers.getOrderDirection(t.direction),
+                quantity: t.quantity,
                 id: i + 1
             }
         });
@@ -340,10 +333,10 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
         };
         tradesExit.data = _.map(this.model.get('trades'), function (t, i) {
             return {
-                x: moment(t.ExitTime).toDate(),
-                y: t.ExitPrice,
-                direction: app.helpers.getOrderDirection(t.Direction),
-                quantity: t.Quantity,
+                x: moment(t.exitTime * 1000).toDate(),
+                y: t.exitPrice,
+                direction: app.helpers.getOrderDirection(t.direction),
+                quantity: t.quantity,
                 id: i + 1
             }
         });
@@ -400,39 +393,39 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
         // chart options
         var options = {
             rangeSelector: {
-                selected: 1
+                buttons: [{
+                  type: 'day',
+                  count: 3,
+                  text: '3d'
+              }, {
+                  type: 'week',
+                  count: 1,
+                  text: '1w'
+              }, {
+                  type: 'month',
+                  count: 1,
+                  text: '1m'
+              }, {
+                  type: 'month',
+                  count: 6,
+                  text: '6m'
+              }, {
+                  type: 'year',
+                  count: 1,
+                  text: '1y'
+              }, {
+                  type: 'all',
+                  text: 'All'
+              }],
+              selected: 3
             },
 
             chart: {
                 zoomType: 'xy'
             },
 
-            navigator: {
-
-                    series: {
-                        data: [
-                            [chart.minTime * 1000, null],
-                            [chart.maxTime * 1000, null]
-                        ]
-                    }
-
-            },
-
             scrollbar: {
-                liveRedraw: false
-            },
-
-            xAxis: {
-                events: {
-                    afterSetExtremes: function (e) {
-                        console.log('afterSetExtremes', e)
-                        var start = Math.round(e.min / 1000);
-                        var end = Math.round(e.max / 1000);
-                        var chart = $('#chart-wrapper').highcharts();
-                        chart.showLoading('Loading data');
-                        self.model.updateChartDate(start, end);
-                    }
-                }
+                liveRedraw: true
             },
 
             rangeSelector: {
@@ -512,9 +505,9 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
             for (var j = 0; j < this.plots[i].series.length; j++) {
                 var s = this.plots[i].series[j];
                 s.yAxis = i;
-                s.dataGrouping = {
+                /*s.dataGrouping = {
                     enabled:false
-                };
+                };*/
                 series.push(s);
             }
         }
@@ -551,40 +544,6 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
 //----------------------------------------------------------------
 (function (app) {
     app.helpers = {
-        getSeriesFromQuantConnectOrders: function () {
-            var ordersSeries = {};
-            $.each(_data['Orders'], function (k, v) {
-                var key = v.Symbol.Value + '_' + app.helpers.getOrderDirection(v.Direction);
-                var series = ordersSeries[key];
-                if (!series) {
-                    series = {
-                        name: key,
-                        type: 'scatter',
-                        data: []
-                    };
-
-                    var symbol = 'triangle';
-                    if (v.Direction == 1)
-                        symbol = 'triangle-down';
-
-                    ordersSeries[key] = series;
-                }
-
-                var time = v.Time;
-                if (time.indexOf('Z') == -1)
-                    time += 'Z';
-                series.data.push([
-                    moment(time).valueOf(),
-                    v.Price
-                ]);
-            });
-            var series = [];
-            $.each(ordersSeries, function (k, v) {
-                series.push(v);
-            });
-            return series;
-        },
-
         getSeriesType: function (id) {
             switch (id) {
                 case 0:
@@ -656,44 +615,21 @@ app.execution.MainView = Backbone.Marionette.ItemView.extend({
 })(app);
 
 
-
-//----------------------------------------------------------------
-// Chart Render
-//----------------------------------------------------------------
-(function (app) {
-    app.chartRender = {
-        plots: [],
-
-
-
-
-
-
-
-        resizeAllPlots: function () {
-            var chart = $('#chart-wrapper').highcharts();
-            var w = $('#chart-wrapper').width();
-            var h = $('#chart-wrapper').height();
-            console.log('redraw', w, h);
-            chart.setSize(w, h);
-        }
-    };
-})(app);
-
-
-
 //----------------------------------------------------------------
 // Start
 //----------------------------------------------------------------
 $(function () {
-
     // set main split
     $('#main').split({
         orientation: 'horizontal',
         limit: 20,
         position: '60%',
         onDrag: function () {
-            app.chartRender.resizeAllPlots();
+            var chart = $('#chart-wrapper').highcharts();
+            var w = $('#chart-wrapper').width();
+            var h = $('#chart-wrapper').height();
+            console.log('redraw', w, h);
+            chart.setSize(w, h)
         }
     });
 
@@ -702,15 +638,4 @@ $(function () {
             useUTC: true
         }
     });
-
-    // init view
-    //app.view.init();
-
-    // fixed chart type for Strategy Equity data and order the series
-    //_data.Charts['Strategy Equity'].ChartType = 1;
-
-    // render chart with cahrt builder data
-    //app.chartRender.render('Strategy Equity');
-    //app.chartRender.renderMaxExcursion('MFE');
-
 });
