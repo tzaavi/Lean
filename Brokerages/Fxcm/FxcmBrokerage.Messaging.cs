@@ -260,15 +260,18 @@ namespace QuantConnect.Brokerages.Fxcm
                 _mapRequestsToAutoResetEvents[_currentRequest].Set();
                 _mapRequestsToAutoResetEvents.Remove(_currentRequest);
 
-                // unsubscribe all instruments
-                var request = new MarketDataRequest();
-                foreach (var fxcmSymbol in _fxcmInstruments.Keys)
+                // unsubscribe all instruments (only at first logon)
+                if (_subscribedSymbols.Count == 0)
                 {
-                    request.addRelatedSymbol(_fxcmInstruments[fxcmSymbol]);
+                    var request = new MarketDataRequest();
+                    foreach (var fxcmSymbol in _fxcmInstruments.Keys)
+                    {
+                        request.addRelatedSymbol(_fxcmInstruments[fxcmSymbol]);
+                    }
+                    request.setSubscriptionRequestType(SubscriptionRequestTypeFactory.UNSUBSCRIBE);
+                    request.setMDEntryTypeSet(MarketDataRequest.MDENTRYTYPESET_ALL);
+                    _gateway.sendMessage(request);
                 }
-                request.setSubscriptionRequestType(SubscriptionRequestTypeFactory.UNSUBSCRIBE);
-                request.setMDEntryTypeSet(MarketDataRequest.MDENTRYTYPESET_ALL);
-                _gateway.sendMessage(request);
             }
         }
 
@@ -381,9 +384,12 @@ namespace QuantConnect.Brokerages.Fxcm
                 {
                     if (orderId == "NONE" && orderStatus.getCode() == IFixValueDefs.__Fields.FXCMORDSTATUS_REJECTED)
                     {
-                        var messageText = message.getFXCMErrorDetails().Replace("\n", "");
-                        Log.Trace(messageText);
-                        OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "OrderSubmitReject", messageText));
+                        if (message.getSide() != SideFactory.UNDISCLOSED)
+                        {
+                            var messageText = message.getFXCMErrorDetails().Replace("\n", "");
+                            Log.Trace("FxcmBrokerage.OnExecutionReport(): " + messageText);
+                            OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "OrderSubmitReject", messageText));
+                        }
 
                         _isOrderSubmitRejected = true;
                     }
@@ -444,7 +450,7 @@ namespace QuantConnect.Brokerages.Fxcm
             if (message.getRequestID() == _currentRequest)
             {
                 var messageText = message.getFXCMErrorDetails().Replace("\n", "");
-                Log.Trace(messageText);
+                Log.Trace("FxcmBrokerage.OnOrderCancelReject(): " + messageText);
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "OrderUpdateOrCancelReject", messageText));
 
                 _isOrderUpdateOrCancelRejected = true;
@@ -464,6 +470,20 @@ namespace QuantConnect.Brokerages.Fxcm
         /// <param name="message">Status message received</param>
         public void messageArrived(ISessionStatus message)
         {
+            switch (message.getStatusCode())
+            {
+                case ISessionStatus.__Fields.STATUSCODE_READY:
+                    lock (_lockerConnectionMonitor)
+                    {
+                        _lastReadyMessageTime = DateTime.UtcNow;
+                    }
+                    _connectionError = false;
+                    break;
+
+                case ISessionStatus.__Fields.STATUSCODE_ERROR:
+                    _connectionError = true;
+                    break;
+            }
         }
 
         #endregion
