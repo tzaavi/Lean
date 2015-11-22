@@ -29,6 +29,15 @@ namespace QuantConnect.Optimization.Engine.Web.Modules
                 return Response.AsRedirect("/optimization");
             };
 
+            Get["/source/{file}/{exId}"] = parameters =>
+            {
+                InitDatabase(parameters.file);
+
+                string path = "/executions/" + parameters.exId;
+
+                return Response.AsRedirect(path);
+            };
+
             Get["/optimization"] = parameters =>
             {
                 if(_db == null)

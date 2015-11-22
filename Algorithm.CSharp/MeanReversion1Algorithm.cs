@@ -22,6 +22,8 @@ namespace QuantConnect.Algorithm.CSharp
         private bool isLongSetup;
         private bool isShortSetup;
 
+        private string symbol = "USDJPY";
+
         private RollingWindow<TradeBar> lastBars = new RollingWindow<TradeBar>(3);
         private decimal lastShortClose;
 
@@ -31,20 +33,21 @@ namespace QuantConnect.Algorithm.CSharp
         //[DecimalParameter(0.001, 0.003, 0.0005)]
         public decimal Target = 0.002m;
 
-        [DecimalParameter(0.1, 0.3, 0.02)]
+        //[DecimalParameter(0.1, 0.3, 0.02)]
+        [DecimalParameter(0.16, 0.16, 0.01)]
         public decimal TralingStopPercent = 0.16m;
 
         public override void Initialize()
         {
             SetStartDate(2014, 1, 1);
-            SetEndDate(2015, 1, 1);
+            SetEndDate(2015, 11, 21);
             
 
             // securities
-            AddSecurity(SecurityType.Forex, "EURUSD", Resolution.Minute, "oanda", true, 0, false);
+            AddSecurity(SecurityType.Forex, symbol, Resolution.Minute, "oanda", true, 0, false);
             
             // custom fee model
-            Securities["EURUSD"].TransactionModel = new ConstantFeeTransactionModel(0);
+            Securities[symbol].TransactionModel = new ConstantFeeTransactionModel(0);
 
             // indicators
             emaTrendFast = new ExponentialMovingAverage(5);
@@ -54,11 +57,11 @@ namespace QuantConnect.Algorithm.CSharp
             // consolidate
             var consolidatorLong = new TradeBarConsolidator(TimeSpan.FromMinutes(60));
             consolidatorLong.DataConsolidated += OnLongTimePertiodData;
-            SubscriptionManager.AddConsolidator("EURUSD", consolidatorLong);
+            SubscriptionManager.AddConsolidator(symbol, consolidatorLong);
 
             var consolidatorShort = new TradeBarConsolidator(TimeSpan.FromMinutes(1));
             consolidatorShort.DataConsolidated += OnShortTimePertiodData;
-            SubscriptionManager.AddConsolidator("EURUSD", consolidatorShort);
+            SubscriptionManager.AddConsolidator(symbol, consolidatorShort);
 
             // setup charts
             AddChart(new Chart("Price", ChartType.Overlay));
@@ -73,14 +76,14 @@ namespace QuantConnect.Algorithm.CSharp
                 {
                     stop = bar.Close - (TralingStopPercent / 100 * bar.Close);
                     target = bar.Close + Target;
-                    Order("EURUSD", 10000);
+                    Order(symbol, 10000);
                 }
 
                 if (isShortSetup && bar.Close < lastBars[0].High && lastShortClose > lastBars[0].High)
                 {
                     stop = bar.Close + (TralingStopPercent / 100 * bar.Close);
                     target = bar.Close - Target;
-                    Order("EURUSD", -10000);
+                    Order(symbol, -10000);
                 }
             }
 
@@ -88,7 +91,7 @@ namespace QuantConnect.Algorithm.CSharp
             //update stops
             if (Portfolio.Invested)
             {
-                var holding = Portfolio["EURUSD"];
+                var holding = Portfolio[symbol];
 
                 if (holding.IsLong && (bar.Close - (TralingStopPercent / 100 * bar.Close)) > stop)
                 {
@@ -105,7 +108,7 @@ namespace QuantConnect.Algorithm.CSharp
             // close trade
             if (Portfolio.Invested)
             {
-                var holding = Portfolio["EURUSD"];
+                var holding = Portfolio[symbol];
 
                 if (holding.IsLong && (bar.Close < stop))
                 {

@@ -159,7 +159,7 @@ namespace QuantConnect.Optimization.Engine
             brokerage = new BacktestingBrokerage(algorithm);
 
             // set the transaction models base on the requested brokerage properties
-            SetupHandler.UpdateTransactionModels(algorithm, algorithm.BrokerageModel);
+            SetupHandler.UpdateModels(algorithm, algorithm.BrokerageModel);
             algorithm.Transactions.SetOrderProcessor(transactionHandler);
             algorithm.PostInitialize();
 

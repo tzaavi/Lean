@@ -9,7 +9,7 @@
     "environment": "optimization",
 
     // algorithm class selector
-    "algorithm-type-name": "MeanReversionAlgorithm",
+    "algorithm-type-name": "ConnortsRsi",
 
     // Algorithm language selector - options CSharp, FSharp, VisualBasic, Python, Java
     "algorithm-language": "CSharp",
