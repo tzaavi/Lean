@@ -610,10 +610,14 @@ namespace QuantConnect.Optimization.Engine
 
         public void AddPermutationResult(Dictionary<string, Tuple<Type, object>> permutation, OptimizationResultHandler result)
         {
+            Log.Trace("START SAVE EXECUTION TO FILE...");
+
             // save to database
             var testId = _db.InsertPermutation(permutation);
             _db.InsertStatistics(result.StatisticsResults, testId);
             _db.InsertCharts(result.Charts.Values, testId);
+
+            Log.Trace("FINIHS SAVE EXECUTION TO FILE");
         }
 
         public void SendFinalResults()

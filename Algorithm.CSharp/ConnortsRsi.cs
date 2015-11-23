@@ -15,15 +15,17 @@ namespace QuantConnect.Algorithm.CSharp
         private RelativeStrengthIndex rsi;
         private SimpleMovingAverage maPrice;
         private SimpleMovingAverage maTrend;
+        private decimal riskStopValue;
 
-        private const string Symbol = "EURUSD";
+        private const string Symbol = "USDJPY";
 
-        [IntParameter(2, 2, 1)]
         public int RsiSize = 2;
 
         public int MaTrendSize = 200;
 
         public int MaPriceSize = 5;
+
+        public decimal RiskStopPercent = 0.15m;
 
         public override void Initialize()
         {
@@ -41,9 +43,13 @@ namespace QuantConnect.Algorithm.CSharp
             maPrice = new SimpleMovingAverage(MaPriceSize);
 
             // consolidate
-            var consolidatorLong = new TradeBarConsolidator(TimeSpan.FromMinutes(60));
+            var consolidatorLong = new TradeBarConsolidator(TimeSpan.FromMinutes(60 * 4));
             consolidatorLong.DataConsolidated += OnLongTimePertiodData;
             SubscriptionManager.AddConsolidator(Symbol, consolidatorLong);
+
+            var consolidatorShort = new TradeBarConsolidator(TimeSpan.FromMinutes(1));
+            consolidatorShort.DataConsolidated += OnShortTimePertiodData;
+            SubscriptionManager.AddConsolidator(Symbol, consolidatorShort);
         }
 
         void OnLongTimePertiodData(object o, TradeBar bar)
@@ -64,6 +70,7 @@ namespace QuantConnect.Algorithm.CSharp
                         bar.Close < maPrice)
                     {
                         Order(Symbol, 10000);
+                        riskStopValue = bar.Close - (RiskStopPercent / 100 * bar.Close);
                     }
 
 
@@ -73,6 +80,7 @@ namespace QuantConnect.Algorithm.CSharp
                         bar.Close > maPrice)
                     {
                         Order(Symbol, -10000);
+                        riskStopValue = bar.Close + (RiskStopPercent / 100 * bar.Close);
                     }
                 }
 
@@ -101,6 +109,32 @@ namespace QuantConnect.Algorithm.CSharp
             Plot("Price", "High", bar.High);
             Plot("Price", "maTrend", maTrend.Current);
             Plot("Price", "maPrice", maPrice.Current);
+            Plot("RSI", "RSI", rsi);
+        }
+
+        public void OnShortTimePertiodData(object o, TradeBar bar)
+        {
+            
+            return;
+
+            if (Portfolio.Invested)
+            {
+                var holding = Portfolio[Symbol];
+
+                if (holding.UnrealizedProfit < -20)
+                    Liquidate();
+
+
+                /*if (holding.IsLong && bar.Close < riskStopValue)
+                {
+                    Liquidate();
+                }
+
+                if (holding.IsShort && bar.Close > riskStopValue)
+                {
+                    Liquidate();
+                }*/
+            }
         }
     }
 }

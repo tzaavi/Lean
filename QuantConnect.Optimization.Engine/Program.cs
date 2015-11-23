@@ -62,7 +62,8 @@ namespace QuantConnect.Optimization.Engine
             {
                 Directory.CreateDirectory(opzDataFolder);
             }
-            var dbFile = Path.Combine(opzDataFolder, string.Format("{0}-{1:yyyyMMddHHmmssfff}.sqlite", Config.Get("algorithm-type-name"), DateTime.Now));
+            var dbFileName = string.Format("{0}-{1:yyyyMMddHHmmssfff}.sqlite", Config.Get("algorithm-type-name"), DateTime.Now);
+            var dbFile = Path.Combine(opzDataFolder, dbFileName);
             var db = new Database(dbFile);
 
             var totalResult = new OptimizationTotalResult(db);
@@ -107,7 +108,7 @@ namespace QuantConnect.Optimization.Engine
                 totalResult.AddPermutationResult(permutation, permutationResult);
 
                 // dispose
-                leanEngineSystemHandlers.Dispose();
+                sqlleanEngineSystemHandlers.Dispose();
                 leanEngineAlgorithmHandlers.Dispose();
                 Log.LogHandler.Dispose();
             }
@@ -116,7 +117,7 @@ namespace QuantConnect.Optimization.Engine
             totalResult.SendFinalResults();
 
             // view resutls
-            StartNancy(dbFile);
+            StartNancy(dbFileName);
         }
 
         static List<Dictionary<string, Tuple<Type, object>>> GetPermutations()
